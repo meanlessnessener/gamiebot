@@ -21,4 +21,9 @@ public class GameRequestHandler implements IRequestHandler {
     public ArrayList<Response> handleRequest(String chatId, String text) {
         return new ArrayList<>();
     }
+
+    @Override
+    public boolean shouldRequestBeHandledHere(String chatId, String text) {
+        return false;
+    }
 }

@@ -3,30 +3,24 @@ package GamieBot.model.users;
 import java.util.HashMap;
 
 
-public class UserManager {
+public class UserManager implements IUserManager {
     private final HashMap<String, User> users;
 
     public UserManager() {
         users = new HashMap<>();
     }
-
-    public void insert(String chatId, User user) {
-        users.put(chatId, user);
+    
+    @Override
+    public void registerNewUser(String chatId) {
+        users.put(chatId, new User(chatId, UserStatus.INMENU));
     }
 
-    public User get(String chatId) {
-        return users.getOrDefault(chatId, null);
-    }
-
-    public void erase(String chatId) {
-        users.remove(chatId);
-    }
-
-    public int size() {
-        return users.size();
-    }
-
-    public void clear() {
-        users.clear();
+    @Override
+    public User getUser(String chatId) throws Exception {
+        if (users.containsKey(chatId)) {
+            return users.get(chatId);
+        } else {
+            throw new Exception();
+        }
     }
 }

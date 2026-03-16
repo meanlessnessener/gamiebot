@@ -5,5 +5,6 @@ import java.util.ArrayList;
 
 
 public interface IRequestHandler {
-    public ArrayList<Response> handleRequest(String chatId, String text);
+    public ArrayList<Response> handleRequest(String chatId, String text) throws Exception;
+    public boolean shouldRequestBeHandledHere(String chatId, String text);
 }

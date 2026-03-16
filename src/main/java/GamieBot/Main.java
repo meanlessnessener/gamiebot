@@ -7,9 +7,9 @@ import GamieBot.view.TelegramBotView;
 
 public class Main {
     public static void main(String[] args) throws Exception {
-        IView TelegramBotView = new TelegramBotView();
+        IView telegramBotView = new TelegramBotView();
 
-        Presenter presenter = new Presenter(TelegramBotView);
+        Presenter presenter = new Presenter(telegramBotView);
 
         presenter.run();
     }
