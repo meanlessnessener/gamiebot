@@ -5,7 +5,6 @@ import java.util.ArrayList;
 import GamieBot.model.games.IGame;
 import GamieBot.model.users.User;
 
-
 public class GameSession {
     private final IGame game;
     private final ArrayList<User> users;

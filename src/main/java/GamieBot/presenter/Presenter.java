@@ -5,11 +5,8 @@ import GamieBot.view.IView;
 import GamieBot.model.Response;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 
-
-
-public class Presenter implements IEventListener{
+public class Presenter implements IEventListener {
     private final IView view;
     private final GeneralRequestHandler requestHandler;
 
@@ -18,7 +15,7 @@ public class Presenter implements IEventListener{
         this.view.setListener(this);
         this.requestHandler = new GeneralRequestHandler();
     }
-    
+
     @Override
     public void onMessageReceived(String chatId, String text) {
         ArrayList<Response> responses = requestHandler.handleRequest(chatId, text);
@@ -27,7 +24,7 @@ public class Presenter implements IEventListener{
             view.sendMessage(response.chatId(), response.text());
         }
     }
-    
+
     public void run() {
         this.view.run();
     }

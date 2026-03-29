@@ -1,4 +1,5 @@
 package GamieBot.view;
+
 import GamieBot.presenter.IEventListener;
 
 import org.telegram.telegrambots.bots.TelegramLongPollingBot;
@@ -7,7 +8,6 @@ import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
 import org.telegram.telegrambots.meta.api.objects.Update;
 import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 import org.telegram.telegrambots.updatesreceivers.DefaultBotSession;
-
 
 @SuppressWarnings("deprecation")
 public class TelegramBotView extends TelegramLongPollingBot implements IView {
@@ -43,7 +43,7 @@ public class TelegramBotView extends TelegramLongPollingBot implements IView {
         try {
             TelegramBotsApi botsApi = new TelegramBotsApi(DefaultBotSession.class);
             botsApi.registerBot(this);
-        } catch(TelegramApiException e) {
+        } catch (TelegramApiException e) {
             e.printStackTrace();
         }
     }

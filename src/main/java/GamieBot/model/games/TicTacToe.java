@@ -1,8 +1,7 @@
 package GamieBot.model.games;
 
-
 public class TicTacToe implements IGame {
-    
+
     @Override
     public void initGame() {
         state = "=======\n| | | |\n=======\n| | | |\n=======\n| | | |\n=======".toCharArray();
@@ -13,14 +12,14 @@ public class TicTacToe implements IGame {
     }
 
     /*
-    =======
-    | | | |
-    =======
-    | | | |
-    =======
-    | | | |
-    =======
-    */
+     * =======
+     * | | | |
+     * =======
+     * | | | |
+     * =======
+     * | | | |
+     * =======
+     */
 
     // Moves format: 3X3 or 3 3
 
@@ -33,8 +32,10 @@ public class TicTacToe implements IGame {
     }
 
     private boolean checkForm(String action) {
-        if (action.length() != 3) return false;
-        else if (!isNormDig(action.charAt(0)) || !isNormDig(action.charAt(2))) return false;
+        if (action.length() != 3)
+            return false;
+        else if (!isNormDig(action.charAt(0)) || !isNormDig(action.charAt(2)))
+            return false;
         return (isNormSep(action.charAt(1)));
     }
 
@@ -111,8 +112,10 @@ public class TicTacToe implements IGame {
     }
 
     private void isGameEnd() {
-        if (checkGlavDiag()) return;
-        if (checkPobDiag()) return;
+        if (checkGlavDiag())
+            return;
+        if (checkPobDiag())
+            return;
         for (int i = 0; i < 3; i++) {
             if (checkGor(i)) {
                 return;
@@ -127,7 +130,8 @@ public class TicTacToe implements IGame {
 
     @Override
     public boolean checkMove(int playerNum, String action) {
-        if (isEnd) return false;
+        if (isEnd)
+            return false;
         else if (playerNum != movingPlayer) {
             return false;
         } else if (!checkForm(action)) {

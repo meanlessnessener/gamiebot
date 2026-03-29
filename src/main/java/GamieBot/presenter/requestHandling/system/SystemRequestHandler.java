@@ -6,7 +6,6 @@ import GamieBot.model.users.UserManager;
 import java.util.ArrayList;
 import java.util.Arrays;
 
-
 public class SystemRequestHandler implements IRequestHandler {
     private final UserManager users;
 
@@ -16,12 +15,13 @@ public class SystemRequestHandler implements IRequestHandler {
 
     private final String startText = "Привет! Введи /help, чтобы получить справку";
     private final String helpText = "/help -- вывод справки\n\nБольше пока ничего нет :(";
-    private final String[] commands = {"/start", "/help"};
+    private final String[] commands = { "/start", "/help" };
 
     @Override
     public boolean shouldRequestBeHandledHere(String chatId, String text) {
         for (String command : commands) {
-            if (text.startsWith(command)) return true;
+            if (text.startsWith(command))
+                return true;
         }
         return false;
     }

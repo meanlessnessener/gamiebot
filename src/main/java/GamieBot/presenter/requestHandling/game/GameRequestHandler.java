@@ -5,7 +5,6 @@ import GamieBot.presenter.requestHandling.IRequestHandler;
 import GamieBot.model.users.UserManager;
 import java.util.ArrayList;
 
-
 public class GameRequestHandler implements IRequestHandler {
     private final LobbyManager lobbyManager;
     private final SessionManager sessionManager;

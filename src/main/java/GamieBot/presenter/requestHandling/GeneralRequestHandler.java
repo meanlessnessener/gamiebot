@@ -7,7 +7,6 @@ import GamieBot.model.users.UserManager;
 import java.util.ArrayList;
 import java.util.Arrays;
 
-
 public class GeneralRequestHandler implements IRequestHandler {
     private final GameRequestHandler gameRequestHandler;
     private final SystemRequestHandler systemRequestHandler;
@@ -30,10 +29,10 @@ public class GeneralRequestHandler implements IRequestHandler {
             if (gameRequestHandler.shouldRequestBeHandledHere(chatId, text)) {
                 return gameRequestHandler.handleRequest(chatId, text);
             }
-    
+
             Response response = new Response(chatId, commandNotFoundText);
             return new ArrayList<>(Arrays.asList(response));
-        } catch(Exception e) {
+        } catch (Exception e) {
             Response response = new Response(chatId, getErrorText(e));
             return new ArrayList<>(Arrays.asList(response));
         }
