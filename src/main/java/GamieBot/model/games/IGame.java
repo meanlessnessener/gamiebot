@@ -8,4 +8,6 @@ public interface IGame {
     public boolean checkMove(int playerNum, String action);
 
     public String getInfoForPlayer(int playerNum);
+
+    public boolean isFinished();
 }

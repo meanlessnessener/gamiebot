@@ -15,11 +15,16 @@ public class UserManager implements IUserManager {
     }
 
     @Override
-    public User getUser(String chatId) throws Exception {
+    public User getUser(String chatId) {
         if (users.containsKey(chatId)) {
             return users.get(chatId);
         } else {
-            throw new Exception();
+            throw null;
         }
+    }
+
+    @Override
+    public boolean isUserRegistered(String chatId) {
+        return users.containsKey(chatId);
     }
 }

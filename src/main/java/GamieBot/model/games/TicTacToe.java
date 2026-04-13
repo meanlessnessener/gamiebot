@@ -162,8 +162,12 @@ public class TicTacToe implements IGame {
     }
 
     @Override
-    public String getInfoForPlayer(int playerNum) {
+    public boolean isFinished() {
+        return isEnd;
+    }
 
+    @Override
+    public String getInfoForPlayer(int playerNum) {
         String ans = "";
         for (int i = 0; i < state.length; i++) {
             ans += state[i];

@@ -14,19 +14,19 @@ public class GameSession {
         this.users = users;
     }
 
-    public boolean makeMove(User player, String action) {
+    public boolean makeMove(String chatId, String action) {
         int playerNum = -1;
         for (int i = 0; i < users.size(); i++) {
-            if (users.get(i) == player) {
+            if (users.get(i).chatId() == chatId) {
                 playerNum = i;
                 break;
             }
         }
         if (game.checkMove(playerNum, action)) {
             game.makeMove(playerNum, action);
-            return false;
-        } else {
             return true;
+        } else {
+            return false;
         }
     }
 
@@ -36,5 +36,9 @@ public class GameSession {
             ans.add(new Response(users.get(i).chatId(), game.getInfoForPlayer(i)));
         }
         return ans;
+    }
+
+    public boolean isFinished() {
+        return game.isFinished();
     }
 }
