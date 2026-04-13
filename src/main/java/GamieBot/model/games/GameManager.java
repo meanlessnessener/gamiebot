@@ -10,14 +10,14 @@ public class GameManager {
         return availableGames.contains(gameName);
     }
 
-    public static IGame createGame(String gameName) throws Exception {
+    public static IGame createGame(String gameName) {
         if (!doGameNameExists(gameName)) {
             return null;
         }
         if (gameName == "TicTacToe") {
             return new TicTacToe();
         }
-        throw new Exception();
+        return null;
     }
 
     public static ArrayList<String> getAvailableGames() {

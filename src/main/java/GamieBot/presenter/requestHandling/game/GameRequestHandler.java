@@ -49,7 +49,7 @@ public class GameRequestHandler implements IRequestHandler {
         responses.add(new Response(chatId, textSearchingGame));
 
         if (lobbyManager.isLobbyFull(gameName)) {
-            ArrayList<Users> players = lobbyManager.getUsersForNewSession(gameName);
+            ArrayList<User> players = lobbyManager.getUsersForNewSession(gameName);
             sessionManager.createSession(players, gameName);
             
             for (User user : players) {
@@ -78,7 +78,7 @@ public class GameRequestHandler implements IRequestHandler {
                 return true;
         }
 
-        if (currentUser.status() == UserStatus.INGAME) {
+        if (currentUser.status == UserStatus.INGAME) {
             return true;
         } else {
             return false;

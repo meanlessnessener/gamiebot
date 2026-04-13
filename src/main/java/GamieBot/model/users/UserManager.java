@@ -11,7 +11,7 @@ public class UserManager implements IUserManager {
 
     @Override
     public void registerNewUser(String chatId) {
-        users.put(chatId, new User(chatId, UserStatus.INMENU));
+        users.put(chatId, new User(chatId));
     }
 
     @Override

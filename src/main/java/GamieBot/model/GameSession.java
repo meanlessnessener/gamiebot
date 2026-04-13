@@ -17,7 +17,7 @@ public class GameSession {
     public boolean makeMove(String chatId, String action) {
         int playerNum = -1;
         for (int i = 0; i < users.size(); i++) {
-            if (users.get(i).chatId() == chatId) {
+            if (users.get(i).chatId == chatId) {
                 playerNum = i;
                 break;
             }
@@ -33,12 +33,16 @@ public class GameSession {
     public ArrayList<Response> getInfoForPlayers() {
         ArrayList<Response> ans = new ArrayList<>();
         for (int i = 0; i < users.size(); i++) {
-            ans.add(new Response(users.get(i).chatId(), game.getInfoForPlayer(i)));
+            ans.add(new Response(users.get(i).chatId, game.getInfoForPlayer(i)));
         }
         return ans;
     }
 
     public boolean isFinished() {
         return game.isFinished();
+    }
+
+    public ArrayList<User> getUsers() {
+        return users;
     }
 }
