@@ -14,13 +14,19 @@ public class GameSession {
         this.users = users;
     }
 
-    public boolean makeMove(String chatId, String action) {
-        int playerNum = -1;
+    private int getPlayerNum(String chatId) {
         for (int i = 0; i < users.size(); i++) {
-            if (users.get(i).chatId == chatId) {
-                playerNum = i;
-                break;
+            if (users.get(i).chatId.equals(chatId)) {
+                return i;
             }
+        }
+        return -1;
+    }
+
+    public boolean makeMove(String chatId, String action) throws Exception {
+        int playerNum = getPlayerNum(chatId);
+        if (playerNum == -1) {
+            throw new Exception("Player not found");
         }
         if (game.checkMove(playerNum, action)) {
             game.makeMove(playerNum, action);
@@ -30,12 +36,12 @@ public class GameSession {
         }
     }
 
-    public ArrayList<Response> getInfoForPlayers() {
-        ArrayList<Response> ans = new ArrayList<>();
-        for (int i = 0; i < users.size(); i++) {
-            ans.add(new Response(users.get(i).chatId, game.getInfoForPlayer(i)));
+    public String getGameStateForUser(String chatId) {
+        int playerNum = getPlayerNum(chatId);
+        if (playerNum == -1) {
+            return "Ты не в игре";
         }
-        return ans;
+        return game.getInfoForPlayer(playerNum);
     }
 
     public boolean isFinished() {

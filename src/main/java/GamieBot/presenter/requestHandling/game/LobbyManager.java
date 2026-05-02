@@ -8,7 +8,11 @@ import GamieBot.model.games.GameManager;
 import GamieBot.model.users.User;
 import GamieBot.model.users.UserManager;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class LobbyManager {
+    private static final Logger log = LoggerFactory.getLogger(LobbyManager.class);
     private final UserManager users;
     private HashMap<String, ArrayDeque<String>> waitList;
 
@@ -22,7 +26,8 @@ public class LobbyManager {
     }
 
     public void addUserToLobby(String chatId, String gameName) {
-        waitList.get(gameName).addLast(gameName);
+        waitList.get(gameName).addLast(chatId);
+        log.info("User added to lobby for game {}: {}", gameName, chatId);
     }
 
     public boolean isLobbyFull(String gameName) {
@@ -36,6 +41,7 @@ public class LobbyManager {
             String chatId = waitList.get(gameName).getFirst();
             waitList.get(gameName).removeFirst();
             res.add(users.getUser(chatId));
+            log.info("User removed from lobby for game {}: {}", gameName, chatId);
         }
 
         return res;

@@ -7,10 +7,15 @@ import GamieBot.model.users.UserManager;
 import GamieBot.model.users.UserStatus;
 import GamieBot.model.users.User;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 
 public class GameRequestHandler implements IRequestHandler {
+    private static final Logger log = LoggerFactory.getLogger(GameRequestHandler.class);
+
     private final LobbyManager lobbyManager;
     private final SessionManager sessionManager;
     private final UserManager users;
@@ -27,13 +32,59 @@ public class GameRequestHandler implements IRequestHandler {
 
     @Override
     public ArrayList<Response> handleRequest(String chatId, String text) {
-        ArrayList<Response> responses = new ArrayList<>();
 
         if (text.startsWith("/play")) {
-            responses.addAll(handlePlay(chatId, text));
+            log.info("Handling /play command for chatId {}: {}", chatId, text);
+            return handlePlay(chatId, text);
         }
 
-        return new ArrayList<>();
+        if (text.startsWith("/quit")) {
+            log.info("Handling /quit command for chatId {}: {}", chatId, text);
+            return handleQuit(chatId);
+        }
+
+        log.info("Handling game move for chatId {}: {}", chatId, text);
+        return handleMove(chatId, text);
+    }
+
+    private ArrayList<Response> handleMove(String chatId, String text) {
+        ArrayList<Response> responses = new ArrayList<>();
+
+        try {
+            if (sessionManager.makeMove(chatId, text) == false) {
+                responses.add(new Response(chatId, "Недопустимый ход"));
+                return responses;
+            }
+        } catch (Exception e) {
+            responses.add(new Response(chatId, "Произошла ошибка при выполнении хода: " + e.getMessage()));
+            log.warn("Error occurred while handling move for chatId {} and action {}: {}", chatId, text, e.getMessage());
+            return responses;
+        }
+
+        for (User user : sessionManager.getPlayersInSession(chatId)) {
+            String gameState = sessionManager.getGameStateForUser(user.chatId);
+            responses.add(new Response(user.chatId, gameState));
+        }
+        return responses;
+    }
+
+    private ArrayList<Response> handleQuit(String chatId) {
+        ArrayList<Response> responses = new ArrayList<>();
+        sessionManager.removeSession(chatId);
+
+        for (User user : sessionManager.getPlayersInSession(chatId)) {
+            String text;
+            if (user.chatId.equals(chatId)) {
+                text = "Ты покинул игру";
+            } else {
+                text = "Игрок " + chatId + " покинул игру. Игра прервана";
+            }
+            responses.add(new Response(user.chatId, text));
+        }
+
+        log.info("User {} quited the game", chatId);
+
+        return responses;
     }
 
     private ArrayList<Response> handlePlay(String chatId, String text) {
@@ -65,17 +116,17 @@ public class GameRequestHandler implements IRequestHandler {
         if (!users.isUserRegistered(chatId))
             return false;
 
+        for (String currentCommand : commands) {
+            if (text.startsWith(currentCommand))
+                return true;
+        }
+
         User currentUser;
 
         try {
             currentUser = users.getUser(chatId);
         } catch (Exception e) {
             return false;
-        }
-
-        for (String currentCommand : commands) {
-            if (text.startsWith(currentCommand))
-                return true;
         }
 
         if (currentUser.status == UserStatus.INGAME) {

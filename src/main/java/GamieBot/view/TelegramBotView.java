@@ -9,13 +9,19 @@ import org.telegram.telegrambots.meta.api.objects.Update;
 import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 import org.telegram.telegrambots.updatesreceivers.DefaultBotSession;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 @SuppressWarnings("deprecation")
 public class TelegramBotView extends TelegramLongPollingBot implements IView {
+    private static final Logger log = LoggerFactory.getLogger(TelegramBotView.class);
+
     private IEventListener listener;
 
     @Override
     public void setListener(IEventListener listener) {
         this.listener = listener;
+        log.info("Listener set: {}", listener.getClass().getName());
     }
 
     @Override
@@ -26,8 +32,9 @@ public class TelegramBotView extends TelegramLongPollingBot implements IView {
 
         try {
             execute(message);
+            log.info("Message sent to chatId {}: {}", chatId, text);
         } catch (TelegramApiException e) {
-            e.printStackTrace();
+            log.error("Error occurred while sending message", e);
         }
     }
 
@@ -44,7 +51,7 @@ public class TelegramBotView extends TelegramLongPollingBot implements IView {
             TelegramBotsApi botsApi = new TelegramBotsApi(DefaultBotSession.class);
             botsApi.registerBot(this);
         } catch (TelegramApiException e) {
-            e.printStackTrace();
+            log.error("Error occurred while registering bot", e);
         }
     }
 
