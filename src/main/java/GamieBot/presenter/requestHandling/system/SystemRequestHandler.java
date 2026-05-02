@@ -26,11 +26,11 @@ public class SystemRequestHandler implements IRequestHandler {
     public boolean shouldRequestBeHandledHere(String chatId, String text) {
         for (String command : commands) {
             if (text.startsWith(command)) {
-                log.info("Handling system command for chatId {}: {}", chatId, text);
+                log.info("System command should be handled here for chatId {}: {}", chatId, text);
                 return true;
             }
         }
-        log.info("System command not found for chatId {}: {}", chatId, text);
+        log.info("System command shouldn't be handled here for chatId {}: {}", chatId, text);
         return false;
     }
 
@@ -47,6 +47,7 @@ public class SystemRequestHandler implements IRequestHandler {
     }
 
     private ArrayList<Response> handleStart(String chatId) {
+        
         users.registerNewUser(chatId);
         log.info("Registered new user with chatId {}", chatId);
         Response response = new Response(chatId, startText);

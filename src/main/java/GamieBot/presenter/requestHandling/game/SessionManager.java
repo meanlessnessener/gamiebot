@@ -19,17 +19,30 @@ public class SessionManager {
     private final UserManager users;
 
     public SessionManager(UserManager users) {
-        sessions = new HashMap<>();
+        this.sessions = new HashMap<>();
         this.users = users;
     }
 
     public void createSession(ArrayList<User> players, String gameName) {
+        if (!GameManager.doGameNameExists(gameName)) {
+            log.warn("Game '{}' not found", gameName);
+            return;
+        }
+        
         GameSession session = new GameSession(GameManager.createGame(gameName), players);
+
+        if (session == null) {
+            log.warn("Game '{}' for {} is null (???)", gameName, players);
+            return;
+        }
+
         for (User user : players) {
             users.getUser(user.chatId).status = UserStatus.INGAME;
             sessions.put(user.chatId, session);
         }
         log.info("Session is created for players: {}", players.stream().map(u -> u.chatId).toList());
+        log.info("Current sessions: {}", sessions.keySet());
+        log.info("Current hashmap: {}", sessions);
     }
 
     public boolean makeMove(String chatId, String action) throws Exception {
@@ -44,8 +57,10 @@ public class SessionManager {
     }
 
     public String getGameStateForUser(String chatId) {
-        GameSession session = sessions.get(chatId);
-        if (session != null) {
+        log.info("Retrieving game state for user {}", chatId);
+        if (sessions.containsKey(chatId)) {
+            GameSession session = sessions.get(chatId);
+            log.info("Session {} is found for user {}", session, chatId);
             return session.getGameStateForUser(chatId);
         }
         log.warn("Session is not found for chatId {}", chatId);
@@ -53,8 +68,8 @@ public class SessionManager {
     }
 
     public ArrayList<User> getPlayersInSession(String chatId) {
-        GameSession session = sessions.get(chatId);
-        if (session != null) {
+        if (sessions.containsKey(chatId)) {
+            GameSession session = sessions.get(chatId);
             return session.getUsers();
         }
         log.warn("Session is not found for chatId {}", chatId);
@@ -62,12 +77,13 @@ public class SessionManager {
     }
 
     public void removeSession(String chatId) {
-        GameSession session = sessions.get(chatId);
-        if (session != null) {
+        if (sessions.containsKey(chatId)) {
+            GameSession session = sessions.get(chatId);
             for (User user : session.getUsers()) {
                 users.getUser(user.chatId).status = UserStatus.INMENU;
                 sessions.remove(user.chatId);
             }
         }
         log.info("Session removed for chatId: {}", chatId);
+    }
 }

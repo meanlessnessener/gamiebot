@@ -105,6 +105,7 @@ public class GameRequestHandler implements IRequestHandler {
             
             for (User user : players) {
                 responses.add(new Response(user.chatId, textInvite2Play));
+                responses.add(new Response(user.chatId, sessionManager.getGameStateForUser(user.chatId)));
             }
         }
 

@@ -2,6 +2,8 @@ package GamieBot.model.games;
 
 public class TicTacToe implements IGame {
 
+    public TicTacToe() {}
+
     @Override
     public void initGame() {
         state = "=======\n| | | |\n=======\n| | | |\n=======\n| | | |\n=======".toCharArray();

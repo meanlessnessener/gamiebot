@@ -11,6 +11,7 @@ public class GameSession {
 
     public GameSession(IGame game, ArrayList<User> users) {
         this.game = game;
+        this.game.initGame();
         this.users = users;
     }
 
