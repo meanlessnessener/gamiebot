@@ -1,15 +1,16 @@
 package GamieBot;
 
-import GamieBot.presenter.Presenter;
-import GamieBot.view.IView;
-import GamieBot.view.TelegramBotView;
+import GamieBot.infra.telegram.TelegramBot;
+
+import GamieBot.adapter.controller.TelegramBotController;
 
 public class Main {
     public static void main(String[] args) {
-        IView telegramBotView = new TelegramBotView();
+        TelegramBotController controller = new TelegramBotController();
+        TelegramBot telegramBot = new TelegramBot();
 
-        Presenter presenter = new Presenter(telegramBotView);
+        telegramBot.setController(controller);
 
-        presenter.run();
+        telegramBot.start();
     }
 }

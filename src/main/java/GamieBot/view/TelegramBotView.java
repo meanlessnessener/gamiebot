@@ -12,6 +12,9 @@ import org.telegram.telegrambots.updatesreceivers.DefaultBotSession;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+
 @SuppressWarnings("deprecation")
 public class TelegramBotView extends TelegramLongPollingBot implements IView {
     private static final Logger log = LoggerFactory.getLogger(TelegramBotView.class);
@@ -27,8 +30,13 @@ public class TelegramBotView extends TelegramLongPollingBot implements IView {
     @Override
     public void sendMessage(String chatId, String text) {
         SendMessage message = new SendMessage();
-        message.setChatId(chatId);
-        message.setText(text);
+        message.setParseMode("HTML");
+
+        text = "<pre>" + text + "</pre>";
+
+        // message.setChatId(chatId);
+        message.setChatId("433165830");
+        message.setText(String.join("::", chatId, text));
 
         try {
             execute(message);
@@ -40,8 +48,14 @@ public class TelegramBotView extends TelegramLongPollingBot implements IView {
 
     @Override
     public void onUpdateReceived(Update update) {
-        String chatId = update.getMessage().getChatId().toString();
-        String text = update.getMessage().getText();
+        // String text = update.getMessage().getText();
+        // String chatId = update.getMessage().getChatId().toString();
+        ArrayList<String> msg = new ArrayList<>(Arrays.asList(update.getMessage().getText().split(" ")));
+
+        String chatId = msg.get(0);
+        msg.remove(0);
+        String text = String.join(" ", msg);
+
         listener.onMessageReceived(chatId, text);
     }
 
