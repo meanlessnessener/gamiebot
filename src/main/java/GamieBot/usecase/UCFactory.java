@@ -50,4 +50,8 @@ public class UCFactory {
     public QuitGameSessionUC createQuitGameSessionUC() {
         return new QuitGameSessionUC(userRepo, gameSessionRepo, presenter);
     }
+
+    public UnknownInputUC createUnknownInputUC() {
+        return new UnknownInputUC(presenter);
+    }
 }

@@ -70,12 +70,15 @@ public class TelegramController implements ITelegramController {
                 break;
             case "/quitLobby":
                 log.info("Routing to quitLobby command for userId {}", userId);
+                handleQuitLobbyCommand(userId);
                 break;
             case "/quitGame":
                 log.info("Routing to quitGame command for userId {}", userId);
+                handleQuitGameCommand(userId);
                 break;
             default:
                 log.warn("Unknown command received from userId {}: {}", userId, command);
+                handleUnknownCommand(userId, command + String.join(" ", args));
                 break;
         }
     }
@@ -110,5 +113,23 @@ public class TelegramController implements ITelegramController {
         
         MakeMoveUC makeMoveUC = ucFactory.createMakeMoveUC();
         makeMoveUC.execute(userId, move);
+    }
+
+    private void handleQuitLobbyCommand(UUID userId) {
+        log.info("Handling quitLobby command for userId {}", userId);
+        QuitLobbyUC quitLobbyUC = ucFactory.createQuitLobbyUC();
+        quitLobbyUC.execute(userId);
+    }
+
+    private void handleQuitGameCommand(UUID userId) {
+        log.info("Handling quitGame command for userId {}", userId);
+        QuitGameSessionUC quitGameSessionUC = ucFactory.createQuitGameSessionUC();
+        quitGameSessionUC.execute(userId);
+    }
+
+    private void handleUnknownCommand(UUID userId, String input) {
+        log.info("Handling unknown command for userId {}", userId);
+        UnknownInputUC unknownInputUC = ucFactory.createUnknownInputUC();
+        unknownInputUC.execute(userId, input);
     }
 }
