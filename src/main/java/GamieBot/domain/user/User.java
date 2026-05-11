@@ -5,11 +5,13 @@ import java.util.UUID;
 
 public class User {
     private final UUID uuid;
+    private String name;
     private UserStatus status;
     private ArrayList<UserProvider> providers;
 
-    public User(UUID uuid) {
+    public User(UUID uuid, String name) {
         this.uuid = uuid;
+        this.name = name;
         this.status = UserStatus.IDLE;
         this.providers = new ArrayList<>();
     }
@@ -40,5 +42,9 @@ public class User {
 
     public void setStatus(UserStatus status) {
         this.status = status;
-    }    
+    }
+
+    public String getName() {
+        return this.name;
+    }
 }

@@ -12,9 +12,9 @@ public class RegisterNewUserUC {
         this.userRepo = userRepo;
     }
 
-    public UUID execute(String provider, String token) {
+    public UUID execute(String provider, String token, String name) {
         UUID id = UUID.randomUUID();
-        User user = new User(id);
+        User user = new User(id, name);
         user.addProvider(provider, token);
         
         userRepo.saveUser(id, user);

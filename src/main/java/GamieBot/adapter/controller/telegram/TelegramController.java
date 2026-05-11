@@ -31,19 +31,21 @@ public class TelegramController implements ITelegramController {
         String[] parts = message.getText().split(" ");
         String command = parts[0];
         String[] args = Arrays.copyOfRange(parts, 1, parts.length);
+        
         log.info("Message received from chatId {}: {}, {}", chatId, command, String.join(" ", args));
 
-        UUID userId = getOrRegisterUser(chatId);
+        String name = message.getChat().getFirstName() != null ? message.getChat().getFirstName() : "Unknown";
+        UUID userId = getOrRegisterUser(chatId, name);
 
         route(userId, command, args);
     }
 
-    private UUID getOrRegisterUser(String chatId) {
+    private UUID getOrRegisterUser(String chatId, String name) {
         UUID userId = userRepo.getUserByProvider("telegram", chatId);
         if (userId == null) {
             log.info("Registering new telegram user for chatId {}", chatId);
             RegisterNewUserUC registerNewUserUC = ucFactory.createRegisterNewUserUC();
-            userId = registerNewUserUC.execute("telegram", chatId);
+            userId = registerNewUserUC.execute("telegram", chatId, name);
         }
         return userId;
     }
@@ -102,5 +104,11 @@ public class TelegramController implements ITelegramController {
         tryMatchMakingUC.execute(gameName);
     }
 
-    private 
+    private void handleMoveCommand(UUID userId, String[] args) {
+        log.info("Handling move command for userId {} with args: {}", userId, String.join(" ", args));
+        String move = args.length > 0 ? String.join(" ", args) : null;
+        
+        MakeMoveUC makeMoveUC = ucFactory.createMakeMoveUC();
+        makeMoveUC.execute(userId, move);
+    }
 }
