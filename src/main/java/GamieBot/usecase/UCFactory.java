@@ -36,7 +36,7 @@ public class UCFactory {
     }
 
     public TryMatchMakingUC createTryMatchMakingUC() {
-        return new TryMatchMakingUC(userRepo, lobbyRepo, gameSessionRepo, presenter);
+        return new TryMatchMakingUC(lobbyRepo, gameSessionRepo, presenter);
     }
 
     public MakeMoveUC createMakeMoveUC() {

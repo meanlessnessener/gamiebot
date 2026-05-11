@@ -6,24 +6,20 @@ import GamieBot.domain.games.GameFactory;
 import GamieBot.domain.games.IGame;
 import GamieBot.infra.repo.lobby.ILobbyRepo;
 import GamieBot.infra.repo.session.IGameSessionRepo;
-import GamieBot.infra.repo.user.IUserRepo;
 import java.util.List;
 import java.util.UUID;
 
 public class TryMatchMakingUC {
 
-    private final IUserRepo userRepo;
     private final ILobbyRepo lobbyRepo;
     private final IGameSessionRepo gameSessionRepo;
     private final IPresenter presenter;
 
     public TryMatchMakingUC(
-        IUserRepo userRepo,
         ILobbyRepo lobbyRepo,
         IGameSessionRepo gameSessionRepo,
         IPresenter presenter
     ) {
-        this.userRepo = userRepo;
         this.lobbyRepo = lobbyRepo;
         this.gameSessionRepo = gameSessionRepo;
         this.presenter = presenter;

@@ -8,6 +8,7 @@
 plugins {
     id("java")
     id("application")
+    id("com.gradleup.shadow") version "8.3.0"
 }
 
 group = "GamieBot"
@@ -35,4 +36,16 @@ java {
 
 application {
     mainClass.set("GamieBot.Main")
+}
+
+tasks.named<JavaExec>("run") {
+    standardInput = System.`in`
+}
+
+tasks.jar {
+    manifest {
+        attributes(
+            "Main-Class" to "GamieBot.Main"
+        )
+    }
 }

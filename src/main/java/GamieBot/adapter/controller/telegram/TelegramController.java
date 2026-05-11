@@ -1,6 +1,5 @@
 package GamieBot.adapter.controller.telegram;
 
-import java.util.Arrays;
 import java.util.UUID;
 
 import org.telegram.telegrambots.meta.api.objects.Message;
@@ -8,36 +7,37 @@ import org.telegram.telegrambots.meta.api.objects.Message;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import GamieBot.infra.repo.lobby.ILobbyRepo;
 import GamieBot.infra.repo.user.IUserRepo;
+import GamieBot.usecase.CommandRouter;
 
-import GamieBot.usecase.*;
+import GamieBot.usecase.RegisterNewUserUC;
+import GamieBot.usecase.UCFactory;
 
 public class TelegramController implements ITelegramController {
     private static final Logger log = LoggerFactory.getLogger(TelegramController.class);
     private final IUserRepo userRepo;
-    private final ILobbyRepo lobbyRepo;
     private final UCFactory ucFactory;
+    private final CommandRouter commandRouter;
 
-    public TelegramController(IUserRepo userRepo, ILobbyRepo lobbyRepo, UCFactory ucFactory) {
+    public TelegramController(IUserRepo userRepo, UCFactory ucFactory, CommandRouter commandRouter) {
         log.info("TelegramController initialized");
         this.userRepo = userRepo;
-        this.lobbyRepo = lobbyRepo;
         this.ucFactory = ucFactory;
+        this.commandRouter = commandRouter;
     }
 
     public void onUpdateReceived(Message message) {
         String chatId = message.getChatId().toString();
-        String[] parts = message.getText().split(" ");
+        String[] parts = message.getText().split(" ", 2);
         String command = parts[0];
-        String[] args = Arrays.copyOfRange(parts, 1, parts.length);
+        String[] args = parts.length > 1 ? parts[1].split(" ") : new String[0];
         
         log.info("Message received from chatId {}: {}, {}", chatId, command, String.join(" ", args));
 
         String name = message.getChat().getFirstName() != null ? message.getChat().getFirstName() : "Unknown";
         UUID userId = getOrRegisterUser(chatId, name);
 
-        route(userId, command, args);
+        commandRouter.route(userId, command, args);
     }
 
     private UUID getOrRegisterUser(String chatId, String name) {
@@ -48,88 +48,5 @@ public class TelegramController implements ITelegramController {
             userId = registerNewUserUC.execute("telegram", chatId, name);
         }
         return userId;
-    }
-
-    private void route(UUID userId, String command, String[] args) {
-        switch (command) {
-            case "/start":
-                log.info("Routing to start command for userId {}", userId);
-                handleStartCommand(userId);
-                break;
-            case "/help":
-                log.info("Routing to help command for userId {}", userId);
-                handleHelpCommand(userId);
-                break;
-            case "/play":
-                log.info("Routing to play command for userId {} with args: {}", userId, String.join(" ", args));
-                handlePlayCommand(userId, args);
-                break;
-            case "/move":
-                log.info("Routing to move command for userId {} with args: {}", userId, String.join(" ", args));
-                handleMoveCommand(userId, args);
-                break;
-            case "/quitLobby":
-                log.info("Routing to quitLobby command for userId {}", userId);
-                handleQuitLobbyCommand(userId);
-                break;
-            case "/quitGame":
-                log.info("Routing to quitGame command for userId {}", userId);
-                handleQuitGameCommand(userId);
-                break;
-            default:
-                log.warn("Unknown command received from userId {}: {}", userId, command);
-                handleUnknownCommand(userId, command + String.join(" ", args));
-                break;
-        }
-    }
-
-    private void handleStartCommand(UUID userId) {
-        log.info("Handling start command for userId {}", userId);
-        HelloUC helloUC = ucFactory.createHelloUC();
-        helloUC.execute(userId);
-        HelpUC helpUC = ucFactory.createHelpUC();
-        helpUC.execute(userId);
-    }
-
-    private void handleHelpCommand(UUID userId) {
-        log.info("Handling help command for userId {}", userId);
-        HelpUC helpUC = ucFactory.createHelpUC();
-        helpUC.execute(userId);
-    }
-
-    private void handlePlayCommand(UUID userId, String[] args) {
-        log.info("Handling play command for userId {} with args: {}", userId, String.join(" ", args));
-        String gameName = args.length > 0 ? args[0] : null;
-        
-        JoinLobbyUC joinLobbyUC = ucFactory.createJoinLobbyUC();
-        joinLobbyUC.execute(userId, gameName);
-        TryMatchMakingUC tryMatchMakingUC = ucFactory.createTryMatchMakingUC();
-        tryMatchMakingUC.execute(gameName);
-    }
-
-    private void handleMoveCommand(UUID userId, String[] args) {
-        log.info("Handling move command for userId {} with args: {}", userId, String.join(" ", args));
-        String move = args.length > 0 ? String.join(" ", args) : null;
-        
-        MakeMoveUC makeMoveUC = ucFactory.createMakeMoveUC();
-        makeMoveUC.execute(userId, move);
-    }
-
-    private void handleQuitLobbyCommand(UUID userId) {
-        log.info("Handling quitLobby command for userId {}", userId);
-        QuitLobbyUC quitLobbyUC = ucFactory.createQuitLobbyUC();
-        quitLobbyUC.execute(userId);
-    }
-
-    private void handleQuitGameCommand(UUID userId) {
-        log.info("Handling quitGame command for userId {}", userId);
-        QuitGameSessionUC quitGameSessionUC = ucFactory.createQuitGameSessionUC();
-        quitGameSessionUC.execute(userId);
-    }
-
-    private void handleUnknownCommand(UUID userId, String input) {
-        log.info("Handling unknown command for userId {}", userId);
-        UnknownInputUC unknownInputUC = ucFactory.createUnknownInputUC();
-        unknownInputUC.execute(userId, input);
     }
 }
