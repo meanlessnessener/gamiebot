@@ -31,12 +31,13 @@ public class GameSession {
             return "Такого игрока в сессии нет";
         }
 
-        if (game.checkMove(playerNum, action)) {
-            game.makeMove(playerNum, action);
-            return "Ход выполнен";
-        } else {
+        if (!game.checkMove(playerNum, action)) {
             return "Недопустимый ход";
         }
+        
+        game.makeMove(playerNum, action);
+        return "Ход выполнен";
+        
     }
 
     public String getGameStateForPlayer(UUID id) {
