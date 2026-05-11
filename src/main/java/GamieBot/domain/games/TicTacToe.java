@@ -115,6 +115,7 @@ public class TicTacToe implements IGame {
         }
     }
 
+    @Override
     public boolean checkMovingPlayer(int playerNum) {
         return (playerNum == movingPlayer);
     }
@@ -147,13 +148,13 @@ public class TicTacToe implements IGame {
     public void makeMove(int playerNum, String action) {
         if (movingPlayer == playerNum) {
             if (playerNum == player1) {
-                int x = action.charAt(0) - '0';
-                int y = action.charAt(2) - '0';
+                int x = action.charAt(0) - '1';
+                int y = action.charAt(2) - '1';
                 state[(x * 2 + 1) * 8 + y * 2 + 1] = 'X';
                 movingPlayer = player2;
             } else if (playerNum == player2) {
-                int x = action.charAt(0) - '0';
-                int y = action.charAt(2) - '0';
+                int x = action.charAt(0) - '1';
+                int y = action.charAt(2) - '1';
                 state[(x * 2 + 1) * 8 + y * 2 + 1] = 'O';
                 movingPlayer = player1;
             }
