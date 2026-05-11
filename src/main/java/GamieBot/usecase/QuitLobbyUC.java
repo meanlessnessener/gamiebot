@@ -2,6 +2,8 @@ package GamieBot.usecase;
 
 import GamieBot.infra.repo.lobby.ILobbyRepo;
 import GamieBot.infra.repo.user.IUserRepo;
+import GamieBot.domain.user.User;
+import java.util.UUID;
 
 public class QuitLobbyUC {
     private final IUserRepo userRepo;

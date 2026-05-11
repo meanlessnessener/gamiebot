@@ -2,13 +2,16 @@ package GamieBot.usecase;
 
 import GamieBot.domain.gameSession.GameSession;
 import GamieBot.infra.repo.session.IGameSessionRepo;
+import GamieBot.adapter.presenter.IPresenter;
 import java.util.UUID;
 
 public class MakeMoveUC {
     private final IGameSessionRepo gameSessionRepo;
+    private final IPresenter presenter;
 
-    public MakeMoveUC(IGameSessionRepo gameSessionRepo) {
+    public MakeMoveUC(IGameSessionRepo gameSessionRepo, IPresenter presenter) {
         this.gameSessionRepo = gameSessionRepo;
+        this.presenter = presenter;
     }
 
     public void execute(UUID userId, String move) {

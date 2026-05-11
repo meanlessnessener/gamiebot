@@ -29,14 +29,13 @@ public class QuitGameSessionUC {
             return;
         }
 
-        presenter.sendMessage(userId, "Вы вышли из игры");
-        for (UUID playerId : session.getPlayerIds()) {
+        String response = session.capitulate(userId);
+        presenter.sendMessage(userId, response);
+        for (UUID playerId : session.getPlayers()) {
             if (!playerId.equals(userId)) {
                 presenter.sendMessage(playerId, "Игрок " + user.getName() + " вышел из игры");
             }
         }
-
-        // todo: finish game session
         
         gameSessionRepo.saveSession(session);
     }
