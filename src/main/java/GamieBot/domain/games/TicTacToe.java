@@ -26,6 +26,7 @@ public class TicTacToe implements IGame {
     // Moves format: 3X3 or 3 3
 
     private char crd(int x, int y) {
+        if (x < 0 || x > 2 || y < 0 || y > 2) return '\n';
         return state[(x * 2 + 1) * 8 + y * 2 + 1];
     }
 
@@ -137,8 +138,8 @@ public class TicTacToe implements IGame {
 
     @Override
     public boolean checkMove(int playerNum, String action) {
-        int x = action.charAt(0) - '0';
-        int y = action.charAt(2) - '0';
+        int x = action.charAt(0) - '1';
+        int y = action.charAt(2) - '1';
         return (crd(x, y) == ' ');
     }
 
