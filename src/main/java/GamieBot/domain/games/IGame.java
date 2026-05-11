@@ -7,7 +7,13 @@ public interface IGame {
 
     public boolean checkMove(int playerNum, String action);
 
+    public boolean checkMovingPlayer(int playerNum);
+
+    public boolean checkMoveForm(int playerNum, String action);
+
     public String getInfoForPlayer(int playerNum);
+
+    public int getMovingPlayer();
 
     public boolean isFinished();
 }

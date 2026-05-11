@@ -25,22 +25,6 @@ public class TicTacToe implements IGame {
 
     // Moves format: 3X3 or 3 3
 
-    private boolean isNormDig(char ch) {
-        return ('0' <= ch && ch <= '3');
-    }
-
-    private boolean isNormSep(char ch) {
-        return (ch == 'X' || ch == 'x' || ch == ' ');
-    }
-
-    private boolean checkForm(String action) {
-        if (action.length() != 3)
-            return false;
-        else if (!isNormDig(action.charAt(0)) || !isNormDig(action.charAt(2)))
-            return false;
-        return (isNormSep(action.charAt(1)));
-    }
-
     private char crd(int x, int y) {
         return state[(x * 2 + 1) * 8 + y * 2 + 1];
     }
@@ -130,19 +114,32 @@ public class TicTacToe implements IGame {
         }
     }
 
+    public boolean checkMovingPlayer(int playerNum) {
+        return (playerNum == movingPlayer);
+    }
+
+    private boolean isNormDig(char ch) {
+        return ('0' <= ch && ch <= '3');
+    }
+
+    private boolean isNormSep(char ch) {
+        return (ch == 'X' || ch == 'x' || ch == ' ');
+    }
+
+    @Override
+    public boolean checkMoveForm(int playerNum, String action) {
+        if (action.length() != 3)
+            return false;
+        else if (!isNormDig(action.charAt(0)) || !isNormDig(action.charAt(2)))
+            return false;
+        return (isNormSep(action.charAt(1)));
+    }
+
     @Override
     public boolean checkMove(int playerNum, String action) {
-        if (isEnd)
-            return false;
-        else if (playerNum != movingPlayer) {
-            return false;
-        } else if (!checkForm(action)) {
-            return false;
-        } else {
-            int x = action.charAt(0) - '0';
-            int y = action.charAt(2) - '0';
-            return (crd(x, y) == ' ');
-        }
+        int x = action.charAt(0) - '0';
+        int y = action.charAt(2) - '0';
+        return (crd(x, y) == ' ');
     }
 
     @Override
@@ -161,6 +158,11 @@ public class TicTacToe implements IGame {
             }
         }
         isGameEnd();
+    }
+
+    @Override
+    public int getMovingPlayer() {
+        return movingPlayer;
     }
 
     @Override
