@@ -60,10 +60,10 @@ public class TelegramController implements ITelegramController {
                 break;
             case "/play":
                 log.info("Routing to play command for userId {} with args: {}", userId, String.join(" ", args));
+                handlePlayCommand(userId, args);
                 break;
             case "/move":
-                log.info("Routing to move command for userId {} with args: {}", userId, String.join(" ", args));
-                break;
+                log.info("Routing to move command for userId {} with args: {}", userId, String.join(" ", args));                break;
             case "/quitLobby":
                 log.info("Routing to quitLobby command for userId {}", userId);
                 break;
@@ -88,5 +88,17 @@ public class TelegramController implements ITelegramController {
         log.info("Handling help command for userId {}", userId);
         HelpUC helpUC = ucFactory.createHelpUC();
         helpUC.execute(userId);
+    }
+
+    private void handlePlayCommand(UUID userId, String[] args) {
+        log.info("Handling play command for userId {} with args: {}", userId, String.join(" ", args));
+        if (args.length == 0) {
+            log.warn("No game specified in play command for userId {}", userId);
+            return;
+        }
+        JoinLobbyUC joinLobbyUC = ucFactory.createJoinLobbyUC();
+        joinLobbyUC.execute(userId, args[0]);
+        TryMatchMakingUC tryMatchMakingUC = ucFactory.createTryMatchMakingUC();
+        tryMatchMakingUC.execute(args[0]);
     }
 }

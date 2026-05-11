@@ -15,28 +15,36 @@ public class GameSession {
         this.players = users;
     }
 
-    private int getPlayerNum(UUID id) throws Exception {
+    private int getPlayerNum(UUID id) {
         for (int i = 0; i < players.size(); i++) {
             if (players.get(i).equals(id)) {
                 return i;
             }
         }
-        throw new Exception("Player not found");
+        return -1;
     }
 
-    public boolean makeMove(UUID id, String action) throws Exception {
+    public String makeMove(UUID id, String action) {
         int playerNum = getPlayerNum(id);
+
+        if (playerNum == -1) {
+            return "Такого игрока в сессии нет";
+        }
 
         if (game.checkMove(playerNum, action)) {
             game.makeMove(playerNum, action);
-            return true;
+            return "Ход выполнен";
         } else {
-            return false;
+            return "Недопустимый ход";
         }
     }
 
-    public String getGameStateForPlayer(UUID id) throws Exception {
+    public String getGameStateForPlayer(UUID id) {
         int playerNum = getPlayerNum(id);
+
+        if (playerNum == -1) {
+            return "Такого игрока в сессии нет";
+        }
 
         return game.getInfoForPlayer(playerNum);
     }

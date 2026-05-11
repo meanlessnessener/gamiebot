@@ -1,7 +1,8 @@
-package GamieBot.adapter.presenter;
+package GamieBot.adapter.presenter.telegram;
 
-import GamieBot.infra.telegram.TelegramBot;
 import GamieBot.domain.user.User;
+import GamieBot.adapter.presenter.IPresenter;
+import GamieBot.infra.telegram.TelegramBot;
 import GamieBot.infra.repo.user.IUserRepo;
 
 import java.util.UUID;
