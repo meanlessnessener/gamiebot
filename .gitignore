@@ -4,3 +4,5 @@ build
 .kotlin
 .vscode
 /bin
+deprecated
+*.log

@@ -1,4 +1,4 @@
-package GamieBot.model.games;
+package GamieBot.domain.games;
 
 public class TicTacToe implements IGame {
 

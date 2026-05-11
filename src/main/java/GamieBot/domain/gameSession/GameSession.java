@@ -1,21 +1,21 @@
-package GamieBot.model;
+package GamieBot.domain.gameSession;
 
-import java.util.ArrayList;
+import java.util.List;
+import java.util.UUID;
 
 import GamieBot.domain.games.IGame;
-import GamieBot.domain.user.User;
 
 public class GameSession {
     private final IGame game;
-    private final List<String> players;
+    private final List<UUID> players;
 
-    public GameSession(IGame game, List<String> users) {
+    public GameSession(IGame game, List<UUID> users) {
         this.game = game;
         this.game.initGame();
         this.players = users;
     }
 
-    private int getPlayerNum(String id) throws Exception {
+    private int getPlayerNum(UUID id) throws Exception {
         for (int i = 0; i < players.size(); i++) {
             if (players.get(i).equals(id)) {
                 return i;
@@ -24,7 +24,7 @@ public class GameSession {
         throw new Exception("Player not found");
     }
 
-    public boolean makeMove(String id, String action) throws Exception {
+    public boolean makeMove(UUID id, String action) throws Exception {
         int playerNum = getPlayerNum(id);
 
         if (game.checkMove(playerNum, action)) {
@@ -35,7 +35,7 @@ public class GameSession {
         }
     }
 
-    public String getGameStateForPlayer(String id) throws Exception {
+    public String getGameStateForPlayer(UUID id) throws Exception {
         int playerNum = getPlayerNum(id);
 
         return game.getInfoForPlayer(playerNum);
@@ -45,7 +45,7 @@ public class GameSession {
         return game.isFinished();
     }
 
-    public List<String> getPlayers() {
+    public List<UUID> getPlayers() {
         return players;
     }
 }

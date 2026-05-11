@@ -1,4 +1,4 @@
-package GamieBot.model.games;
+package GamieBot.domain.games;
 
 public interface IGame {
     public void initGame();

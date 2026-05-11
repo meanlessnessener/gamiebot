@@ -1,4 +1,4 @@
-package GamieBot.model.users;
+package GamieBot.domain.user;
 
 public enum UserStatus {
     IDLE,
