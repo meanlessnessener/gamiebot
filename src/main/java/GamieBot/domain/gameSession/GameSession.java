@@ -31,6 +31,14 @@ public class GameSession {
             return "Такого игрока в сессии нет";
         }
 
+        if (game.isFinished()) {
+            return "Игра закончена";
+        }
+
+        if (playerNum != game.getMovingPlayer()) {
+            return "Ход другого игрока";
+        }
+
         if (!game.checkMove(playerNum, action)) {
             return "Недопустимый ход";
         }
@@ -48,6 +56,17 @@ public class GameSession {
         }
 
         return game.getInfoForPlayer(playerNum);
+    }
+
+    public String capitulate(UUID id) {
+        int playerNum = getPlayerNum(id);
+
+        if (playerNum == -1) {
+            return "Такого игрока нет в сессии";
+        }
+
+        game.capitulate(playerNum);
+        return "Вы успешно проиграли";
     }
 
     public boolean isFinished() {

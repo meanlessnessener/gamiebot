@@ -179,6 +179,18 @@ public class TicTacToe implements IGame {
         return ans;
     }
 
+    @Override
+    public void capitulate(int playerNum) {
+        if (!isEnd) {
+            if (playerNum == player1) {
+                setWinner("First");
+            } else {
+                setWinner("Second");
+            }
+        }
+        isEnd = true;
+    }
+
     private char[] state;
     private int player1, player2;
     private int movingPlayer;

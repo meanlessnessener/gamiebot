@@ -16,4 +16,6 @@ public interface IGame {
     public int getMovingPlayer();
 
     public boolean isFinished();
+
+    public void capitulate(int playerNum);
 }
