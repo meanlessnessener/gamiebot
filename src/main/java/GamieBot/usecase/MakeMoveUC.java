@@ -16,6 +16,14 @@ public class MakeMoveUC {
         if (session == null) {
             return;
         }
-        session.makeMove(userId, move);
+        String result = session.makeMove(userId, move);
+        gameSessionRepo.saveSession(session);
+
+        presenter.sendMessage(userId, result);
+
+        for (UUID playerId : session.getPlayers()) {
+            String gameState = session.getGameStateForPlayer(playerId);
+            presenter.sendMessage(playerId, gameState);
+        }
     }
 }
