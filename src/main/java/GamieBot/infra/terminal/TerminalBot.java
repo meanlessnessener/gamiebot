@@ -1,289 +1,243 @@
 package GamieBot.infra.terminal;
+
 import java.io.*;
+import java.net.*;
+import java.net.StandardProtocolFamily;
+import java.nio.channels.*;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.*;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
-import java.util.Set;
+import java.util.concurrent.atomic.AtomicReference;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import GamieBot.adapter.controller.terminal.ITerminalController;
 
-import java.nio.file.attribute.PosixFilePermission;
-import java.nio.file.attribute.PosixFilePermissions;
 public class TerminalBot {
-    private static final Path FIFO_DIR = Paths.get("infra/terminal/fifos");
-    private final Map<String, User> users = Collections.synchronizedMap(new HashMap<>());
-    // API listener for external use
-    private final java.util.concurrent.atomic.AtomicReference<ITerminalController> listener = new java.util.concurrent.atomic.AtomicReference<>();
+    private static final Logger logger = LoggerFactory.getLogger(TerminalBot.class);
+    private static final Path SOCKET_DIR = Paths.get("infra/terminal/sockets");
+    private static final Path SOCKET_PATH = SOCKET_DIR.resolve("gamiebot.sock");
 
-    /**
-     * Set a listener to receive incoming user messages.
-     */
-    public void setController(ITerminalController l) { listener.set(l); }
+    private final Map<String, SocketClient> clients = Collections.synchronizedMap(new HashMap<>());
+    private final AtomicReference<ITerminalController> listener = new AtomicReference<>();
 
-    /**
-     * Notify the configured listener about an incoming message. Public API.
-     */
+    private ServerSocketChannel serverChannel;
+    private Thread acceptorThread;
+
+    public void setController(ITerminalController l) {
+        logger.info("Setting controller: {}", l);
+        listener.set(l);
+    }
+
     public void onMessageReceived(String user, String message) {
         ITerminalController l = listener.get();
         if (l != null) {
-            try { l.onMessageReceived(user, message); } catch (Throwable t) {
-                System.out.println("(listener error) " + t.getMessage());
-            }
+            try { l.onMessageReceived(user, message); } catch (Throwable t) { System.out.println("(listener) " + t.getMessage()); }
         }
     }
 
-    /**
-     * Send a message from the bot to the specified user. Returns true on success.
-     */
-    public boolean sendMessage(String userName, String message) {
-        User u = users.get(userName);
-        if (u == null) return false;
-        String ts = LocalDateTime.now().format(DateTimeFormatter.ISO_LOCAL_TIME);
-        String formatted = String.format("[bot -> %s] (%s) %s", userName, ts, message);
-        try {
-            // Open the out FIFO for read+write to avoid blocking when no external reader is attached.
-            try (java.nio.channels.SeekableByteChannel ch = Files.newByteChannel(u.out, java.util.EnumSet.of(StandardOpenOption.WRITE, StandardOpenOption.READ))) {
-                java.nio.ByteBuffer bb = java.nio.ByteBuffer.wrap((formatted + "\n").getBytes());
-                while (bb.hasRemaining()) {
-                    ch.write(bb);
-                }
-            }
-            return true;
-        } catch (IOException e) {
-            System.out.println("(notice) failed to write to " + u.out + ": " + e.getMessage());
-            return false;
-        }
-    }
+    public void startUnixSocketServer() throws IOException {
+        logger.info("Starting Unix socket server");
+        
+        if (!Files.exists(SOCKET_DIR)) Files.createDirectories(SOCKET_DIR);
+        try { Files.deleteIfExists(SOCKET_PATH); } catch (IOException ignored) {}
 
-    public void run() {
-        TerminalBot app = new TerminalBot();
-        while (true) {
-            try {
-                app.ensureFifoDir();
-                break;
-            } catch (IOException | InterruptedException e) {
-                System.out.println("Failed to create FIFO directory: " + e.getMessage());
-                System.out.println("Retrying in 5 seconds...");
+        serverChannel = ServerSocketChannel.open(StandardProtocolFamily.UNIX);
+        UnixDomainSocketAddress addr = UnixDomainSocketAddress.of(SOCKET_PATH);
+        serverChannel.bind(addr);
+
+        acceptorThread = new Thread(() -> {
+            while (serverChannel.isOpen()) {
                 try {
-                    Thread.sleep(5000);
-                } catch (InterruptedException ignored) {}
-            }
-        }
-        System.out.println("Chat emulator started. Type 'help' for commands.");
-        System.out.print("> ");
-        try {
-             app.commandLoop();
-        } catch (IOException e) {
-            System.out.println("Error in command loop: " + e.getMessage());
-        }
-    }
-
-    private void ensureFifoDir() throws IOException, InterruptedException {
-        if (!Files.exists(FIFO_DIR)) {
-            Files.createDirectories(FIFO_DIR);
-        }
-    }
-
-    private void commandLoop() throws IOException {
-        BufferedReader in = new BufferedReader(new InputStreamReader(System.in));
-        String line;
-        while (true) {
-            line = in.readLine();
-            if (line == null) {
-                // If no attached console (running under a launcher), keep process alive
-                if (System.console() == null) {
-                    try { Thread.sleep(200); } catch (InterruptedException ignored) {}
-                    continue;
-                } else {
-                    // console present but readLine returned null (EOF) -> exit loop
-                    break;
-                }
-            }
-            String[] parts = line.trim().split("\\s+", 3);
-            if (parts.length == 0 || parts[0].isEmpty()) { System.out.print("> "); continue; }
-            String cmd = parts[0].toLowerCase();
-            try {
-                switch (cmd) {
-                    case "help":
-                        printHelp();
-                        break;
-                    case "adduser":
-                        if (parts.length < 2) { System.out.println("Usage: adduser <name>"); break; }
-                        addUser(parts[1]);
-                        break;
-                    case "simulate":
-                        if (parts.length < 3) { System.out.println("Usage: simulate <name> <message>"); break; }
-                        simulate(parts[1], parts[2]);
-                        break;
-                    case "list":
-                        listUsers();
-                        break;
-                    case "exit":
-                        shutdown();
-                        return;
-                    default:
-                        System.out.println("Unknown command. Type 'help'.");
-                }
-            } catch (Exception e) {
-                System.out.println("Error: " + e.getMessage());
-            }
-            System.out.print("> ");
-        }
-    }
-
-    private void printHelp() {
-        System.out.println("Commands:");
-        System.out.println("  adduser <name>        - create user FIFOs and start watching them");
-        System.out.println("  simulate <name> <msg> - send message from a simulated user");
-        System.out.println("  list                  - list users and FIFO paths");
-        System.out.println("  exit                  - quit");
-        System.out.println();
-        System.out.println("External use (from another shell):");
-        System.out.println("  echo 'hello' > infra/terminal/fifos/<name>_in");
-        System.out.println("  cat infra/terminal/fifos/<name>_out");
-    }
-
-    private void addUser(String name) throws IOException, InterruptedException {
-        if (users.containsKey(name)) {
-            System.out.println("User already exists: " + name);
-            return;
-        }
-        Path in = FIFO_DIR.resolve(name + "_in");
-        Path out = FIFO_DIR.resolve(name + "_out");
-        createFifoIfMissing(in);
-        createFifoIfMissing(out);
-        User u = new User(name, in, out);
-        users.put(name, u);
-        startUserWatcher(u);
-        System.out.println("User added. FIFOs:");
-        System.out.println("  in:  " + in.toString());
-        System.out.println("  out: " + out.toString());
-
-        openTerminalForUser(u);
-    }
-
-    private void listUsers() {
-        if (users.isEmpty()) System.out.println("No users.");
-        else users.values().forEach(u -> System.out.println(u.name + " -> in:" + u.in + " out:" + u.out));
-    }
-
-    private void shutdown() {
-        System.out.println("Shutting down...");
-        users.values().forEach(User::stop);
-    }
-
-    private void simulate(String name, String msg) throws IOException {
-        User u = users.get(name);
-        if (u == null) { System.out.println("No such user: " + name); return; }
-        try (OutputStream os = Files.newOutputStream(u.in, StandardOpenOption.WRITE)) {
-            os.write((msg + "\n").getBytes());
-            os.flush();
-        }
-        System.out.println("Simulated message sent.");
-    }
-
-    private void startUserWatcher(User u) {
-        u.running = true;
-        Thread t = new Thread(() -> {
-            while (u.running) {
-                try (InputStream is = Files.newInputStream(u.in, StandardOpenOption.READ);
-                     BufferedReader r = new BufferedReader(new InputStreamReader(is))) {
-                    String line;
-                    while ((line = r.readLine()) != null) {
-                        handleUserMessage(u, line);
-                    }
+                    SocketChannel ch = serverChannel.accept();
+                    handleClientChannel(ch);
                 } catch (IOException e) {
+                    System.out.println("Accept error: " + e.getMessage());
                     try { Thread.sleep(200); } catch (InterruptedException ignored) {}
                 }
             }
-        }, "watcher-" + u.name);
+        }, "unix-acceptor");
+        acceptorThread.setDaemon(true);
+        acceptorThread.start();
+        System.out.println("Unix socket server listening: " + SOCKET_PATH.toAbsolutePath());
+
+        // Try to open a foot terminal to act as server console (client name: 'console')
+        String classpath = System.getProperty("java.class.path");
+        String javaCmd = "java -cp \"" + classpath + "\" GamieBot.infra.terminal.TerminalClient console";
+        try {
+            new ProcessBuilder("foot", "-e", "bash", "-ic", javaCmd + "; exec bash").start();
+            System.out.println("Opened foot terminal for server console");
+        } catch (IOException ex) {
+            System.out.println("(notice) failed to open foot terminal: " + ex.getMessage());
+            // fallback: start a headless JVM client
+            try {
+                new ProcessBuilder("java", "-cp", classpath, "GamieBot.infra.terminal.TerminalClient", "console").start();
+                System.out.println("Started headless console client");
+            } catch (IOException ex2) {
+                System.out.println("Failed to start console client: " + ex2.getMessage());
+            }
+        }
+    }
+
+    private void handleClientChannel(SocketChannel ch) {
+        logger.info("Handling client channel: {}", ch);
+        
+        Thread t = new Thread(() -> {
+            String name = null;
+            try (SocketChannel channel = ch;
+                 BufferedReader r = new BufferedReader(new InputStreamReader(Channels.newInputStream(channel), StandardCharsets.UTF_8));
+                 BufferedWriter w = new BufferedWriter(new OutputStreamWriter(Channels.newOutputStream(channel), StandardCharsets.UTF_8))) {
+
+                // First line: HELLO <name>
+                String first = r.readLine();
+                if (first == null) return;
+                if (first.startsWith("HELLO ")) name = first.substring(6).trim(); else name = UUID.randomUUID().toString();
+
+                SocketClient client = new SocketClient(name, channel, r, w);
+                clients.put(name, client);
+                System.out.println("Client connected: " + name);
+                onMessageReceived(name, "<connected>");
+
+                String ln;
+                if ("console".equals(name)) {
+                    // special server console: interpret commands
+                    w.write("Connected to server console. Type 'help'.\n");
+                    w.flush();
+                    while ((ln = r.readLine()) != null) {
+                        String[] parts = ln.trim().split("\\s+", 3);
+                        if (parts.length == 0 || parts[0].isEmpty()) continue;
+                        String cmd = parts[0];
+                        if (cmd.equals("help")) {
+                            w.write("Commands:\n  list\n  send <client> <msg>\n  stop\n  quit\n");
+                            w.flush();
+                        } else if (cmd.equals("list")) {
+                            w.write("Clients: " + clients.keySet() + "\n");
+                            w.flush();
+                        } else if (cmd.equals("send") && parts.length >= 3) {
+                            String target = parts[1];
+                            String msg = parts[2];
+                            boolean ok = sendMessageToClient(target, msg);
+                            w.write(ok ? "sent\n" : "no such client\n");
+                            w.flush();
+                        } else if (cmd.equals("adduser") && parts.length >= 2) {
+                            String newUser = parts[1];
+                            String classpath = System.getProperty("java.class.path");
+                            String javaCmd = "java -cp \"" + classpath + "\" GamieBot.infra.terminal.TerminalClient " + newUser;
+                            try {
+                                new ProcessBuilder("foot", "-e", "bash", "-ic", javaCmd + "; exec bash").start();
+                                w.write("Opened foot terminal for user: " + newUser + "\n");
+                                w.flush();
+                            } catch (IOException ex) {
+                                try {
+                                    new ProcessBuilder("java", "-cp", classpath, "GamieBot.infra.terminal.TerminalClient", newUser).start();
+                                    w.write("Started headless client for user: " + newUser + "\n");
+                                    w.flush();
+                                } catch (IOException ex2) {
+                                    w.write("Failed to start client for " + newUser + ": " + ex2.getMessage() + "\n");
+                                    w.flush();
+                                }
+                            }
+                        } else if (cmd.equals("stop")) {
+                            w.write("stopping server\n");
+                            w.flush();
+                            stop();
+                            break;
+                        } else if (cmd.equals("quit")) {
+                            w.write("bye\n");
+                            w.flush();
+                            break;
+                        } else {
+                            w.write("unknown command\n");
+                            w.flush();
+                        }
+                    }
+                } else {
+                    while ((ln = r.readLine()) != null) {
+                        onMessageReceived(name, ln);
+                    }
+                }
+            } catch (IOException e) {
+                System.out.println("Client " + name + " error: " + e.getMessage());
+            } finally {
+                if (name != null) {
+                    clients.remove(name);
+                    onMessageReceived(name, "<disconnected>");
+                }
+            }
+        }, "client-handler");
         t.setDaemon(true);
         t.start();
     }
 
-    private void handleUserMessage(User u, String message) {
-        // notify external listener about incoming user message
-        onMessageReceived(u.name, message);
-    }
-
-    private void createFifoIfMissing(Path p) throws IOException, InterruptedException {
-        if (Files.exists(p)) return;
-        ProcessBuilder pb = new ProcessBuilder("mkfifo", p.toString());
-        Process proc = pb.start();
-        int rc = proc.waitFor();
-        if (rc != 0) throw new IOException("mkfifo failed for " + p);
+    public boolean sendMessageToClient(String clientName, String message) {
+        logger.info("Sending message to client: {} -> {}", clientName, message);
+        
+        SocketClient sc = clients.get(clientName);
+        if (sc == null) {
+            logger.warn("Client not found: {}", clientName);
+            return false;
+        }
+        try {
+            sc.writer.write(message + "\n");
+            sc.writer.flush();
+            return true;
+        } catch (IOException e) {
+            logger.error("Write failed to {}: {}", clientName, e.getMessage());
+            return false;
+        }
     }
 
     /**
-     * Create a small helper script that opens tail -f on the out FIFO and provides a prompt
-     * to send lines into the in FIFO. Then try to open it in a terminal emulator.
+     * Backwards-compatible method used by TerminalPresenter and older code.
      */
-    private void openTerminalForUser(User u) {
-        Path script = null;
-        try {
-            script = createSessionScript(u);
-        } catch (IOException ex) {
-            System.out.println("(notice) couldn't create session script: " + ex.getMessage());
-        }
-        String scriptPath = (script != null) ? script.toAbsolutePath().toString() : null;
+    public boolean sendMessage(String userName, String message) {
+        return sendMessageToClient(userName, message);
+    }
 
-        String[][] candidates = new String[][]{
-            {"gnome-terminal", "--", "bash", "-ic", scriptPath != null ? scriptPath : "bash"},
-            {"konsole", "-e", "bash", "-ic", scriptPath != null ? scriptPath : "bash"},
-            {"xterm", "-e", "bash", "-ic", scriptPath != null ? scriptPath : "bash"},
-            {"xfce4-terminal", "-e", "bash", "-ic", scriptPath != null ? scriptPath : "bash"},
-            {"mate-terminal", "-e", "bash", "-ic", scriptPath != null ? scriptPath : "bash"},
-            {"alacritty", "-e", "bash", "-ic", scriptPath != null ? scriptPath : "bash"}
-        };
+    public void stop() {
+        try { if (serverChannel != null) serverChannel.close(); } catch (IOException ignored) {}
+        clients.values().forEach(SocketClient::close);
+    }
 
-        for (String[] cmd : candidates) {
-            try {
-                new ProcessBuilder(cmd).start();
-                System.out.println("Opened terminal for user: " + u.name);
-                return;
-            } catch (IOException e) {
-                // try next
+    private static class SocketClient {
+        final String name;
+        final SocketChannel channel;
+        final BufferedReader reader;
+        final BufferedWriter writer;
+        SocketClient(String name, SocketChannel ch, BufferedReader r, BufferedWriter w) { this.name = name; this.channel = ch; this.reader = r; this.writer = w; }
+        void close() { try { channel.close(); } catch (IOException ignored) {} }
+    }
+
+    public static void main(String[] args) throws Exception {
+        TerminalBot bot = new TerminalBot();
+        bot.startUnixSocketServer();
+
+        BufferedReader in = new BufferedReader(new InputStreamReader(System.in));
+        System.out.println("TerminalBot socket server running. Commands: list, send <name> <msg>, stop, quit");
+        String line;
+        while ((line = in.readLine()) != null) {
+            String[] parts = line.trim().split("\\s+", 3);
+            if (parts.length == 0 || parts[0].isEmpty()) continue;
+            String cmd = parts[0];
+            if (cmd.equals("list")) {
+                System.out.println("Connected clients: " + bot.clients.keySet());
+            } else if (cmd.equals("send") && parts.length >= 3) {
+                String name = parts[1];
+                String msg = parts[2];
+                boolean ok = bot.sendMessageToClient(name, msg);
+                System.out.println(ok ? "sent" : "no such client");
+            } else if (cmd.equals("stop")) {
+                bot.stop();
+                System.out.println("stopped server");
+            } else if (cmd.equals("quit")) {
+                bot.stop();
+                break;
+            } else {
+                System.out.println("unknown command");
             }
         }
-        if (u.out != null) System.out.println("(notice) No supported terminal emulator found. Read replies with: cat " + u.out.toAbsolutePath());
-    }
-
-    private Path createSessionScript(User u) throws IOException {
-        String inPath = u.in.toAbsolutePath().toString();
-        String outPath = u.out.toAbsolutePath().toString();
-        Path script = FIFO_DIR.resolve(u.name + "_session.sh");
-        String content = "#!/bin/bash\n" +
-                "set -e\n" +
-                "trap 'kill $TAILPID 2>/dev/null; exit' EXIT INT TERM\n" +
-                "# ensure FIFOs exist\n" +
-                "while [ ! -p \"" + inPath + "\" ]; do sleep 0.1; done\n" +
-                "while [ ! -p \"" + outPath + "\" ]; do sleep 0.1; done\n" +
-                "echo 'Terminal connected to bot. Type lines to send. Ctrl-C to exit.'\n" +
-                "tail -n +1 -f \"" + outPath + "\" &\n" +
-                "TAILPID=$!\n" +
-                "while true; do\n" +
-                "  read -e -p 'msg> ' LINE || break\n" +
-                "  # write to the bot input FIFO\n" +
-                "  echo \"$LINE\" > \"" + inPath + "\"\n" +
-                "done\n" +
-                "kill $TAILPID 2>/dev/null || true\n";
-        Files.writeString(script, content, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
-        try {
-            Set<PosixFilePermission> perms = PosixFilePermissions.fromString("rwxr-xr-x");
-            Files.setPosixFilePermissions(script, perms);
-        } catch (UnsupportedOperationException ignored) {
-            // ignore systems without POSIX permissions
-        }
-        return script;
-    }
-
-    private static class User {
-        final String name;
-        final Path in;
-        final Path out;
-        volatile boolean running = false;
-        User(String name, Path in, Path out) { this.name = name; this.in = in; this.out = out; }
-        void stop() { running = false; }
     }
 }
