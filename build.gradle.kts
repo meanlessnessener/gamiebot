@@ -8,7 +8,6 @@
 plugins {
     id("java")
     id("application")
-    id("com.gradleup.shadow") version "8.3.0"
 }
 
 group = "GamieBot"
@@ -26,20 +25,23 @@ dependencies {
     implementation("org.apache.logging.log4j:log4j-core:2.23.1")
     implementation("org.apache.logging.log4j:log4j-api:2.23.1")
     implementation("org.apache.logging.log4j:log4j-slf4j2-impl:2.23.1")
+
+    // Test dependencies
+    testImplementation("org.junit.jupiter:junit-jupiter-api:5.10.0")
+    testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:5.10.0")
+    testRuntimeOnly("org.junit.platform:junit-platform-launcher")
+    testImplementation("org.mockito:mockito-core:5.5.0")
+    testImplementation("org.mockito:mockito-junit-jupiter:5.5.0")
 }
 
 java {
     toolchain {
-        languageVersion.set(JavaLanguageVersion.of(21))
+        languageVersion.set(JavaLanguageVersion.of(25))
     }
 }
 
 application {
     mainClass.set("GamieBot.Main")
-}
-
-tasks.named<JavaExec>("run") {
-    standardInput = System.`in`
 }
 
 tasks.jar {
@@ -48,4 +50,9 @@ tasks.jar {
             "Main-Class" to "GamieBot.Main"
         )
     }
+}
+
+// Use JUnit Platform for unit tests
+tasks.test {
+    useJUnitPlatform()
 }
