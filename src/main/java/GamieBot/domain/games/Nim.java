@@ -39,7 +39,7 @@ public class Nim implements IGame {
                 visualState[crd(i, j)] = ' ';
             }
             for (int j = 1; j <= state[i]; j++) {
-                visualState[crd(i, j)] = (char)('0' + state[i]);
+                visualState[crd(i, j)] = '#';
             }
             visualState[crd(i, 0)] = (char)('1' + i);
         }
