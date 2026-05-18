@@ -3,6 +3,8 @@ package GamieBot.usecase;
 import GamieBot.infra.repo.lobby.ILobbyRepo;
 import GamieBot.infra.repo.user.IUserRepo;
 import GamieBot.domain.user.User;
+import GamieBot.domain.user.UserStatus;
+
 import org.junit.jupiter.api.Test;
 
 import java.util.UUID;
@@ -13,7 +15,7 @@ public class QuitLobbyUCTest {
     static class FakeUserRepo implements IUserRepo {
         private final UUID id;
         public FakeUserRepo(UUID id) { this.id = id; }
-        @Override public User getUserByUUID(UUID id) { return new User(id, "n"); }
+        @Override public User getUserByUUID(UUID id) { User user = new User(id, "n"); user.setStatus(UserStatus.SEARCHING); return user; }
         @Override public void saveUser(UUID id, User user) {}
         @Override public UUID getUserByProvider(String provider, String token) { return null; }
         @Override public void saveUserByProvider(String provider, String token, UUID userId) {}
