@@ -7,6 +7,8 @@ import org.telegram.telegrambots.meta.api.objects.Update;
 import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 import org.telegram.telegrambots.updatesreceivers.DefaultBotSession;
 
+import io.github.cdimascio.dotenv.Dotenv;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -15,10 +17,12 @@ import GamieBot.adapter.controller.telegram.ITelegramController;
 public class TelegramBot extends TelegramLongPollingBot {
     private static final Logger log = LoggerFactory.getLogger(TelegramBot.class);
     private ITelegramController controller;
+    private final Dotenv dotenv;
 
     public TelegramBot() {
         super();
         log.info("TelegramBot initialized");
+        this.dotenv = Dotenv.load();
     }
 
     public void setController(ITelegramController controller) {
@@ -56,6 +60,10 @@ public class TelegramBot extends TelegramLongPollingBot {
 
     @Override
     public String getBotToken() {
-        return "8600850077:AAFslm-1R7ImBLVz0z_uR6NXDhY2v-qgR2I";
+        String token = dotenv.get("TELEGRAM_BOT_TOKEN");
+        if (token == null || token.isBlank()) {
+            throw new IllegalStateException("TELEGRAM_BOT_TOKEN not found");
+        }
+        return token;
     }
 }

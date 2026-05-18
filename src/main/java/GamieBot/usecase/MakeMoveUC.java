@@ -88,7 +88,7 @@ public class MakeMoveUC {
 
                 if (session.isDraw()) {
                     String text1 = messageService.get("makeMove.draw", null);
-                    presenter.sendMessage(playerId, text);
+                    presenter.sendMessage(playerId, text1);
                 } else {
                     if (playerId.equals(session.getWinner())) {
                         String text1 = messageService.get("makeMove.youAreWinner", null);
