@@ -1,243 +1,176 @@
 package GamieBot.infra.terminal;
 
-import java.io.*;
-import java.net.*;
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.OutputStream;
+import java.io.PrintWriter;
 import java.net.StandardProtocolFamily;
-import java.nio.channels.*;
+import java.net.UnixDomainSocketAddress;
+import java.nio.channels.Channels;
+import java.nio.channels.ServerSocketChannel;
+import java.nio.channels.SocketChannel;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.*;
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
-import java.util.*;
-import java.util.concurrent.atomic.AtomicReference;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+
+import GamieBot.adapter.controller.terminal.ITerminalController;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import GamieBot.adapter.controller.terminal.ITerminalController;
-
+/**
+ * Minimal TerminalBot implementation backed by a Unix domain socket server.
+ * - run() starts a UNIX domain socket server at sockets/terminal.sock
+ * - opens a 'foot' terminal running the Java client (TerminalClient) to act as a server command console
+ * - supports registering user clients which can send messages to the server
+ * - sendMessage(userName, message) sends a message to a connected user
+ *
+ * Notes:
+ * - Client processes should connect using the included TerminalClient class (or any AF_UNIX client)
+ * - Message protocol (simple line-based):
+ *   REGISTER <userName>  -- first message from client to identify itself
+ *   MSG <text>           -- messages from client to server
+ *   FROM_SERVER <text>   -- messages sent from server to client
+ */
 public class TerminalBot {
-    private static final Logger logger = LoggerFactory.getLogger(TerminalBot.class);
-    private static final Path SOCKET_DIR = Paths.get("infra/terminal/sockets");
-    private static final Path SOCKET_PATH = SOCKET_DIR.resolve("gamiebot.sock");
+    private static final Logger log = LoggerFactory.getLogger(TerminalBot.class);
+    private static final Path SOCKET_DIR = Paths.get("sockets");
+    private static final Path SOCKET_PATH = SOCKET_DIR.resolve("terminal.sock");
 
-    private final Map<String, SocketClient> clients = Collections.synchronizedMap(new HashMap<>());
-    private final AtomicReference<ITerminalController> listener = new AtomicReference<>();
+    private ITerminalController controller;
+    private final Map<String, SocketChannel> users = Collections.synchronizedMap(new HashMap<>());
+    private final ExecutorService pool = Executors.newCachedThreadPool();
 
-    private ServerSocketChannel serverChannel;
-    private Thread acceptorThread;
-
-    public void setController(ITerminalController l) {
-        logger.info("Setting controller: {}", l);
-        listener.set(l);
+    public TerminalBot() {
     }
 
-    public void onMessageReceived(String user, String message) {
-        ITerminalController l = listener.get();
-        if (l != null) {
-            try { l.onMessageReceived(user, message); } catch (Throwable t) { System.out.println("(listener) " + t.getMessage()); }
-        }
+    public void setController(ITerminalController controller) {
+        this.controller = controller;
     }
 
-    public void startUnixSocketServer() throws IOException {
-        logger.info("Starting Unix socket server");
-        
-        if (!Files.exists(SOCKET_DIR)) Files.createDirectories(SOCKET_DIR);
-        try { Files.deleteIfExists(SOCKET_PATH); } catch (IOException ignored) {}
-
-        serverChannel = ServerSocketChannel.open(StandardProtocolFamily.UNIX);
-        UnixDomainSocketAddress addr = UnixDomainSocketAddress.of(SOCKET_PATH);
-        serverChannel.bind(addr);
-
-        acceptorThread = new Thread(() -> {
-            while (serverChannel.isOpen()) {
-                try {
-                    SocketChannel ch = serverChannel.accept();
-                    handleClientChannel(ch);
-                } catch (IOException e) {
-                    System.out.println("Accept error: " + e.getMessage());
-                    try { Thread.sleep(200); } catch (InterruptedException ignored) {}
-                }
-            }
-        }, "unix-acceptor");
-        acceptorThread.setDaemon(true);
-        acceptorThread.start();
-        System.out.println("Unix socket server listening: " + SOCKET_PATH.toAbsolutePath());
-
-        // Try to open a foot terminal to act as server console (client name: 'console')
-        String classpath = System.getProperty("java.class.path");
-        String javaCmd = "java -cp \"" + classpath + "\" GamieBot.infra.terminal.TerminalClient console";
-        try {
-            new ProcessBuilder("foot", "-e", "bash", "-ic", javaCmd + "; exec bash").start();
-            System.out.println("Opened foot terminal for server console");
-        } catch (IOException ex) {
-            System.out.println("(notice) failed to open foot terminal: " + ex.getMessage());
-            // fallback: start a headless JVM client
+    /**
+     * Start the Unix domain socket server and open a foot terminal running the TerminalClient
+     * which can be used as a server-side command console.
+     */
+    public void run() {
+        pool.submit(() -> {
             try {
-                new ProcessBuilder("java", "-cp", classpath, "GamieBot.infra.terminal.TerminalClient", "console").start();
-                System.out.println("Started headless console client");
-            } catch (IOException ex2) {
-                System.out.println("Failed to start console client: " + ex2.getMessage());
-            }
-        }
-    }
+                Files.createDirectories(SOCKET_DIR);
+                // delete stale socket if present
+                try {
+                    Files.deleteIfExists(SOCKET_PATH);
+                } catch (IOException e) {
+                    log.warn("Could not delete existing socket: {}", e.getMessage());
+                }
 
-    private void handleClientChannel(SocketChannel ch) {
-        logger.info("Handling client channel: {}", ch);
-        
-        Thread t = new Thread(() -> {
-            String name = null;
-            try (SocketChannel channel = ch;
-                 BufferedReader r = new BufferedReader(new InputStreamReader(Channels.newInputStream(channel), StandardCharsets.UTF_8));
-                 BufferedWriter w = new BufferedWriter(new OutputStreamWriter(Channels.newOutputStream(channel), StandardCharsets.UTF_8))) {
+                ServerSocketChannel server = ServerSocketChannel.open(StandardProtocolFamily.UNIX);
+                UnixDomainSocketAddress address = UnixDomainSocketAddress.of(SOCKET_PATH);
+                server.bind(address);
 
-                // First line: HELLO <name>
-                String first = r.readLine();
-                if (first == null) return;
-                if (first.startsWith("HELLO ")) name = first.substring(6).trim(); else name = UUID.randomUUID().toString();
+                log.info("UNIX domain socket server listening on {}", SOCKET_PATH);
 
-                SocketClient client = new SocketClient(name, channel, r, w);
-                clients.put(name, client);
-                System.out.println("Client connected: " + name);
-                onMessageReceived(name, "<connected>");
+                // Launch a server console in a new foot terminal. This runs the TerminalClient in "server-console" mode
+                // so the operator can type commands like: addUser <name>, listUsers, help
+                try {
+                    String javaCmd = System.getProperty("java.home") + "/bin/java";
+                    String classpath = System.getProperty("java.class.path");
+                    ProcessBuilder pb = new ProcessBuilder("foot", "-e",
+                            javaCmd, "-cp", classpath, "GamieBot.infra.terminal.TerminalClient",
+                            "__server_console__", SOCKET_PATH.toString());
+                    pb.inheritIO();
+                    pb.start();
+                } catch (Exception e) {
+                    log.warn("Could not open foot terminal for server console: {}", e.getMessage());
+                    log.info("You can run TerminalClient manually: java -cp <classpath> GamieBot.infra.terminal.TerminalClient __server_console__ {}", SOCKET_PATH.toString());
+                }
 
-                String ln;
-                if ("console".equals(name)) {
-                    // special server console: interpret commands
-                    w.write("Connected to server console. Type 'help'.\n");
-                    w.flush();
-                    while ((ln = r.readLine()) != null) {
-                        String[] parts = ln.trim().split("\\s+", 3);
-                        if (parts.length == 0 || parts[0].isEmpty()) continue;
-                        String cmd = parts[0];
-                        if (cmd.equals("help")) {
-                            w.write("Commands:\n  list\n  send <client> <msg>\n  stop\n  quit\n");
-                            w.flush();
-                        } else if (cmd.equals("list")) {
-                            w.write("Clients: " + clients.keySet() + "\n");
-                            w.flush();
-                        } else if (cmd.equals("send") && parts.length >= 3) {
-                            String target = parts[1];
-                            String msg = parts[2];
-                            boolean ok = sendMessageToClient(target, msg);
-                            w.write(ok ? "sent\n" : "no such client\n");
-                            w.flush();
-                        } else if (cmd.equals("adduser") && parts.length >= 2) {
-                            String newUser = parts[1];
-                            String classpath = System.getProperty("java.class.path");
-                            String javaCmd = "java -cp \"" + classpath + "\" GamieBot.infra.terminal.TerminalClient " + newUser;
-                            try {
-                                new ProcessBuilder("foot", "-e", "bash", "-ic", javaCmd + "; exec bash").start();
-                                w.write("Opened foot terminal for user: " + newUser + "\n");
-                                w.flush();
-                            } catch (IOException ex) {
-                                try {
-                                    new ProcessBuilder("java", "-cp", classpath, "GamieBot.infra.terminal.TerminalClient", newUser).start();
-                                    w.write("Started headless client for user: " + newUser + "\n");
-                                    w.flush();
-                                } catch (IOException ex2) {
-                                    w.write("Failed to start client for " + newUser + ": " + ex2.getMessage() + "\n");
-                                    w.flush();
-                                }
-                            }
-                        } else if (cmd.equals("stop")) {
-                            w.write("stopping server\n");
-                            w.flush();
-                            stop();
-                            break;
-                        } else if (cmd.equals("quit")) {
-                            w.write("bye\n");
-                            w.flush();
-                            break;
-                        } else {
-                            w.write("unknown command\n");
-                            w.flush();
-                        }
-                    }
-                } else {
-                    while ((ln = r.readLine()) != null) {
-                        onMessageReceived(name, ln);
-                    }
+                while (true) {
+                    SocketChannel ch = server.accept();
+                    log.info("Accepted connection: {}", ch.getRemoteAddress());
+                    pool.submit(() -> handleClient(ch));
                 }
             } catch (IOException e) {
-                System.out.println("Client " + name + " error: " + e.getMessage());
-            } finally {
-                if (name != null) {
-                    clients.remove(name);
-                    onMessageReceived(name, "<disconnected>");
-                }
+                throw new RuntimeException(e);
             }
-        }, "client-handler");
-        t.setDaemon(true);
-        t.start();
+        });
     }
 
-    public boolean sendMessageToClient(String clientName, String message) {
-        logger.info("Sending message to client: {} -> {}", clientName, message);
-        
-        SocketClient sc = clients.get(clientName);
-        if (sc == null) {
-            logger.warn("Client not found: {}", clientName);
-            return false;
-        }
-        try {
-            sc.writer.write(message + "\n");
-            sc.writer.flush();
-            return true;
+    private void handleClient(SocketChannel ch) {
+        try (SocketChannel client = ch) {
+            InputStream in = Channels.newInputStream(client);
+            BufferedReader reader = new BufferedReader(new InputStreamReader(in, StandardCharsets.UTF_8));
+            OutputStream out = Channels.newOutputStream(client);
+            PrintWriter writer = new PrintWriter(out, true, StandardCharsets.UTF_8);
+
+            // expect a REGISTER <userName> as first non-empty line
+            String line;
+            String registeredUser = null;
+            while ((line = reader.readLine()) != null) {
+                if (line.trim().isEmpty()) continue;
+                if (registeredUser == null) {
+                    if (line.startsWith("REGISTER ")) {
+                        registeredUser = line.substring("REGISTER ".length()).trim();
+                        users.put(registeredUser, client);
+                        log.info("User registered: {}", registeredUser);
+                    } else if ("__server_console__".equals(line) || line.startsWith("CMD ")) {
+                        // server console messages (ignored here)
+                        log.info("Server console connected");
+                    } else {
+                        writer.println("FROM_SERVER ERROR: expected REGISTER <userName>");
+                    }
+                } else {
+                    if (line.startsWith("MSG ")) {
+                        String msg = line.substring(4);
+                        log.info("Message from {}: {}", registeredUser, msg);
+                        if (controller != null) {
+                            controller.onMessageReceived(registeredUser, msg);
+                        }
+                    } else if (line.equals("PING")) {
+                        writer.println("FROM_SERVER PONG");
+                    } else {
+                        // ignore unknown commands from client
+                        log.debug("Unknown client line: {}", line);
+                    }
+                }
+            }
         } catch (IOException e) {
-            logger.error("Write failed to {}: {}", clientName, e.getMessage());
-            return false;
+            log.error("Client handler error: {}", e.getMessage());
+        } finally {
+            // cleanup user mapping if present
+            users.entrySet().removeIf(entry -> {
+                try {
+                    SocketChannel s = entry.getValue();
+                    return !s.isOpen();
+                } catch (Exception ex) {
+                    return true;
+                }
+            });
         }
     }
 
     /**
-     * Backwards-compatible method used by TerminalPresenter and older code.
+     * Send a message to a connected user. Returns true if delivered (user exists and channel writable).
      */
     public boolean sendMessage(String userName, String message) {
-        return sendMessageToClient(userName, message);
-    }
-
-    public void stop() {
-        try { if (serverChannel != null) serverChannel.close(); } catch (IOException ignored) {}
-        clients.values().forEach(SocketClient::close);
-    }
-
-    private static class SocketClient {
-        final String name;
-        final SocketChannel channel;
-        final BufferedReader reader;
-        final BufferedWriter writer;
-        SocketClient(String name, SocketChannel ch, BufferedReader r, BufferedWriter w) { this.name = name; this.channel = ch; this.reader = r; this.writer = w; }
-        void close() { try { channel.close(); } catch (IOException ignored) {} }
-    }
-
-    public static void main(String[] args) throws Exception {
-        TerminalBot bot = new TerminalBot();
-        bot.startUnixSocketServer();
-
-        BufferedReader in = new BufferedReader(new InputStreamReader(System.in));
-        System.out.println("TerminalBot socket server running. Commands: list, send <name> <msg>, stop, quit");
-        String line;
-        while ((line = in.readLine()) != null) {
-            String[] parts = line.trim().split("\\s+", 3);
-            if (parts.length == 0 || parts[0].isEmpty()) continue;
-            String cmd = parts[0];
-            if (cmd.equals("list")) {
-                System.out.println("Connected clients: " + bot.clients.keySet());
-            } else if (cmd.equals("send") && parts.length >= 3) {
-                String name = parts[1];
-                String msg = parts[2];
-                boolean ok = bot.sendMessageToClient(name, msg);
-                System.out.println(ok ? "sent" : "no such client");
-            } else if (cmd.equals("stop")) {
-                bot.stop();
-                System.out.println("stopped server");
-            } else if (cmd.equals("quit")) {
-                bot.stop();
-                break;
-            } else {
-                System.out.println("unknown command");
-            }
+        SocketChannel ch = users.get(userName);
+        if (ch == null || !ch.isOpen()) return false;
+        try {
+            OutputStream out = Channels.newOutputStream(ch);
+            PrintWriter writer = new PrintWriter(out, true, StandardCharsets.UTF_8);
+            writer.println(message);
+            return true;
+        } catch (Exception e) {
+            log.error("Failed to send to {}: {}", userName, e.getMessage());
+            return false;
         }
     }
 }
+
