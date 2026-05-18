@@ -19,5 +19,7 @@ public interface IGame {
 
     public boolean isFinished();
 
+    public boolean isDraw();
+
     public void capitulate(int playerNum);
 }

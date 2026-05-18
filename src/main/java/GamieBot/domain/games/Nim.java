@@ -136,6 +136,11 @@ public class Nim implements IGame {
     }
 
     @Override
+    public boolean isDraw() {
+        return false;
+    }
+
+    @Override
     public void capitulate(int playerNum) {
         if (!isEnd) {
             if (playerNum == player1) {
