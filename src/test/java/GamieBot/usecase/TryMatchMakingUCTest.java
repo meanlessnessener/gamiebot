@@ -43,7 +43,7 @@ public class TryMatchMakingUCTest {
         FakeLobbyRepo lobbyRepo = new FakeLobbyRepo(users);
         FakeGameSessionRepo sessionRepo = new FakeGameSessionRepo();
 
-        TryMatchMakingUC uc = new TryMatchMakingUC(lobbyRepo, sessionRepo, presenter, new TestMessageService());
+        TryMatchMakingUC uc = new TryMatchMakingUC(null, lobbyRepo, sessionRepo, presenter, new TestMessageService());
         uc.execute("TicTacToe");
 
         assertNotNull(sessionRepo.saved, "Session should be saved");

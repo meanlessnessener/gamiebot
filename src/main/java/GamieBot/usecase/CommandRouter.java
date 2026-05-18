@@ -76,6 +76,7 @@ public class CommandRouter {
         
         MakeMoveUC makeMoveUC = ucFactory.createMakeMoveUC();
         makeMoveUC.execute(userId, move);
+        
     }
     
     private void handleQuitLobbyCommand(UUID userId) {

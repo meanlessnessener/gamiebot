@@ -22,28 +22,28 @@ import GamieBot.usecase.UCFactory;
 
 public class Main {
     public static void main(String[] args) {
-        // TelegramBot telegramBot = new TelegramBot();
-        TerminalBot terminalBot = new TerminalBot();
+        TelegramBot telegramBot = new TelegramBot();
+        // TerminalBot terminalBot = new TerminalBot();
         
         IUserRepo userRepo = new InMemoryUserRepo();
         ILobbyRepo lobbyRepo = new InMemoryLobbyRepo();
         IGameSessionRepo gameSessionRepo = new InMemoryGameSessionRepo();
         
-        // IPresenter telegramPresenter = new TelegramPresenter(telegramBot, userRepo);
-        IPresenter terminalPresenter = new TerminalPresenter(terminalBot, userRepo);
+        IPresenter telegramPresenter = new TelegramPresenter(telegramBot, userRepo);
+        // IPresenter terminalPresenter = new TerminalPresenter(terminalBot, userRepo);
         IMessageService messageService = new DefaultMessageService();
         
-        UCFactory ucFactory = new UCFactory(userRepo, lobbyRepo, gameSessionRepo, terminalPresenter, messageService);
+        UCFactory ucFactory = new UCFactory(userRepo, lobbyRepo, gameSessionRepo, telegramPresenter, messageService);
         CommandRouter commandRouter = new CommandRouter(ucFactory);
         
-        // ITelegramController telegramController = new TelegramController(userRepo, ucFactory, commandRouter);
-        ITerminalController terminalController = new TerminalController(userRepo, ucFactory, commandRouter);
+        ITelegramController telegramController = new TelegramController(userRepo, ucFactory, commandRouter);
+        // ITerminalController terminalController = new TerminalController(userRepo, ucFactory, commandRouter);
         
-        // telegramBot.setController(telegramController);
-        terminalBot.setController(terminalController);
+        telegramBot.setController(telegramController);
+        // terminalBot.setController(terminalController);
 
-        terminalBot.run();
+        // terminalBot.run();
 
-        // telegramBot.run();
+        telegramBot.run();
     }
 }

@@ -39,10 +39,10 @@ public class CommandRouterTest {
         public JoinLobbyUC createJoinLobbyUC() { return new JoinLobbyUC(null, null, presenter, messageService); }
 
         @Override
-        public TryMatchMakingUC createTryMatchMakingUC() { return new TryMatchMakingUC(null, null, presenter, messageService); }
+        public TryMatchMakingUC createTryMatchMakingUC() { return new TryMatchMakingUC(null, null, null, presenter, messageService); }
 
         @Override
-        public MakeMoveUC createMakeMoveUC() { return new MakeMoveUC(null, presenter, messageService); }
+        public MakeMoveUC createMakeMoveUC() { return new MakeMoveUC(null, null, presenter, messageService); }
 
         @Override
         public QuitLobbyUC createQuitLobbyUC() { return new QuitLobbyUC(null, null, presenter, messageService); }
