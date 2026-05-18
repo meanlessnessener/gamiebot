@@ -33,7 +33,7 @@ public class Nim implements IGame {
 
     private void makeVisual() {
         if (isEnd) return;
-        for (int i = 0; i < 10; i++) {
+        for (int i = 0; i < 9; i++) {
             for (int j = 0; j < 5; j++) {
                 visualState[crd(i, j)] = ' ';
             }
