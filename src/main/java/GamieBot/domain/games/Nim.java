@@ -6,8 +6,8 @@ public class Nim implements IGame {
     public Nim() {};
 
     private int crd(int x, int y) {
-        if (x < 0 || x > 9 || y < 0 || y > 4) return -1;
-        return (4 - y) * 10 + x;
+        if (x < 0 || x > 9 || y < 0 || y > 5) return -1;
+        return (5 - y) * 10 + x;
     }
 
     private void setWinner(int res) {
@@ -17,12 +17,12 @@ public class Nim implements IGame {
     @Override
     public void initGame() {
         state = new int[9];
-        Random rnd = new Random(23371105);
+        Random rnd = new Random();
         for (int i = 0; i < 9; i++) {
             state[i] = rnd.nextInt(5) + 1;
         }
-        visualState = new char[50];
-        for (int i = 0; i < 5; i++) {
+        visualState = new char[60];
+        for (int i = 0; i < 6; i++) {
             visualState[crd(9, i)] = '\n';
         }
         player1 = 0;
@@ -35,12 +35,13 @@ public class Nim implements IGame {
     private void makeVisual() {
         if (isEnd) return;
         for (int i = 0; i < 9; i++) {
-            for (int j = 0; j < 5; j++) {
+            for (int j = 1; j <= 5; j++) {
                 visualState[crd(i, j)] = ' ';
             }
-            for (int j = 0; j < state[i]; j++) {
+            for (int j = 1; j <= state[i]; j++) {
                 visualState[crd(i, j)] = '#';
             }
+            visualState[crd(i, 0)] = (char)('0' + state[i]);
         }
     }
 
@@ -83,7 +84,7 @@ public class Nim implements IGame {
     @Override
     public boolean checkMove(int playerNum, String action) {
         int x = action.charAt(0) - '1';
-        int y = action.charAt(2) - '1';
+        int y = action.charAt(2) - '0';
         return (state[x] >= y && y > 0);
     }
 
@@ -103,7 +104,7 @@ public class Nim implements IGame {
     public void makeMove(int playerNum, String action) {
         if (playerNum == movingPlayer) {
             int x = action.charAt(0) - '1';
-            int y = action.charAt(2) - '1';
+            int y = action.charAt(2) - '0';
             state[x] -= y;
             if (movingPlayer == player1) {
                 movingPlayer = player2;
