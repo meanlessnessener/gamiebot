@@ -1,6 +1,7 @@
 package GamieBot.usecase;
 
 import GamieBot.adapter.presenter.IPresenter;
+import GamieBot.adapter.resources.TestMessageService;
 import GamieBot.domain.user.User;
 import GamieBot.infra.repo.lobby.ILobbyRepo;
 import GamieBot.infra.repo.user.IUserRepo;
@@ -45,12 +46,12 @@ public class JoinLobbyUCTest {
         FakeUserRepo userRepo = new FakeUserRepo(id);
         FakeLobbyRepo lobbyRepo = new FakeLobbyRepo();
 
-        JoinLobbyUC uc = new JoinLobbyUC(userRepo, lobbyRepo, presenter);
+        JoinLobbyUC uc = new JoinLobbyUC(userRepo, lobbyRepo, presenter, new TestMessageService());
         uc.execute(id, "TicTacToe");
 
         assertEquals(id, lobbyRepo.addedUser);
         assertEquals("TicTacToe", lobbyRepo.addedGame);
         assertEquals(id, presenter.lastId);
-        assertEquals("Ищем игру в TicTacToe", presenter.lastMsg);
+        assertEquals("Searching game TicTacToe", presenter.lastMsg);
     }
 }

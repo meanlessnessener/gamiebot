@@ -1,22 +1,31 @@
 package GamieBot.usecase;
 
+import GamieBot.adapter.presenter.IPresenter;
+import GamieBot.adapter.resources.IMessageService;
 import GamieBot.domain.gameSession.GameSession;
 import GamieBot.domain.user.User;
+import GamieBot.exception.gameSession.PlayerNotFoundException;
 import GamieBot.infra.repo.session.IGameSessionRepo;
 import GamieBot.infra.repo.user.IUserRepo;
-import GamieBot.adapter.presenter.IPresenter;
-
 import java.util.UUID;
 
 public class QuitGameSessionUC {
+
     private final IUserRepo userRepo;
     private final IGameSessionRepo gameSessionRepo;
     private final IPresenter presenter;
-    
-    public QuitGameSessionUC(IUserRepo userRepo, IGameSessionRepo gameSessionRepo, IPresenter presenter) {
+    private final IMessageService messageService;
+
+    public QuitGameSessionUC(
+        IUserRepo userRepo,
+        IGameSessionRepo gameSessionRepo,
+        IPresenter presenter,
+        IMessageService messageService
+    ) {
         this.userRepo = userRepo;
         this.gameSessionRepo = gameSessionRepo;
         this.presenter = presenter;
+        this.messageService = messageService;
     }
 
     public void execute(UUID userId) {
@@ -24,19 +33,43 @@ public class QuitGameSessionUC {
         if (user == null) {
             return;
         }
+
         GameSession session = gameSessionRepo.getSessionByUserUUID(userId);
         if (session == null) {
+            String text = messageService.get(
+                "quitGameSession.sessionNotFound",
+                null
+            );
+            presenter.sendMessage(userId, text);
             return;
         }
 
-        String response = session.capitulate(userId);
-        presenter.sendMessage(userId, response);
-        for (UUID playerId : session.getPlayers()) {
-            if (!playerId.equals(userId)) {
-                presenter.sendMessage(playerId, "Игрок " + user.getName() + " вышел из игры");
+        try {
+            session.capitulate(userId);
+
+            for (UUID playerId : session.getPlayers()) {
+                if (playerId.equals(userId)) {
+                    String text = messageService.get(
+                        "quitGameSession.youLeftTheGame",
+                        null
+                    );
+                    presenter.sendMessage(playerId, text);
+                } else {
+                    String text = messageService.get(
+                        "quitGameSession.playerLeftTheGame",
+                        null
+                    );
+                    presenter.sendMessage(playerId, text);
+                }
             }
+        } catch (PlayerNotFoundException e) {
+            String text = messageService.get(
+                "quitGameSession.playerNotFound",
+                null
+            );
+            presenter.sendMessage(userId, text);
         }
-        
+
         gameSessionRepo.saveSession(session);
     }
 }

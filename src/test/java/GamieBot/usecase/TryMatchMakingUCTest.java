@@ -1,6 +1,7 @@
 package GamieBot.usecase;
 
 import GamieBot.adapter.presenter.IPresenter;
+import GamieBot.adapter.resources.TestMessageService;
 import GamieBot.infra.repo.lobby.ILobbyRepo;
 import GamieBot.infra.repo.session.IGameSessionRepo;
 import org.junit.jupiter.api.Test;
@@ -42,12 +43,12 @@ public class TryMatchMakingUCTest {
         FakeLobbyRepo lobbyRepo = new FakeLobbyRepo(users);
         FakeGameSessionRepo sessionRepo = new FakeGameSessionRepo();
 
-        TryMatchMakingUC uc = new TryMatchMakingUC(lobbyRepo, sessionRepo, presenter);
+        TryMatchMakingUC uc = new TryMatchMakingUC(lobbyRepo, sessionRepo, presenter, new TestMessageService());
         uc.execute("TicTacToe");
 
         assertNotNull(sessionRepo.saved, "Session should be saved");
         assertTrue(presenter.msgs.containsKey(u1));
         assertTrue(presenter.msgs.containsKey(u2));
-        assertTrue(presenter.msgs.get(u1).stream().anyMatch(s -> s.contains("Найдена игра!")));
+        assertTrue(presenter.msgs.get(u1).stream().anyMatch(s -> s.contains("Game started!")));
     }
 }

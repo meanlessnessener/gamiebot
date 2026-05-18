@@ -6,17 +6,20 @@ import GamieBot.domain.games.GameFactory;
 import GamieBot.domain.games.IGame;
 import GamieBot.domain.user.User;
 import GamieBot.adapter.presenter.IPresenter;
+import GamieBot.adapter.resources.IMessageService;
 import java.util.UUID;
 
 public class JoinLobbyUC {
     private final IUserRepo userRepo;
     private final ILobbyRepo lobbyRepo;
     private final IPresenter presenter;
+    private final IMessageService messageService;
 
-    public JoinLobbyUC(IUserRepo userRepo, ILobbyRepo lobbyRepo, IPresenter presenter) {
+    public JoinLobbyUC(IUserRepo userRepo, ILobbyRepo lobbyRepo, IPresenter presenter, IMessageService messageService) {
         this.userRepo = userRepo;
         this.lobbyRepo = lobbyRepo;
         this.presenter = presenter;
+        this.messageService = messageService;
     }
 
     public void execute(UUID id, String gameName) {
@@ -25,15 +28,17 @@ public class JoinLobbyUC {
             return;
         }
         if (gameName == null || gameName.isEmpty()) {
-            presenter.sendMessage(id, "Укажите название игры");
+            String text = messageService.get("joinLobby.gameNameRequired", null);
+            presenter.sendMessage(id, text);
             return;
         }
-        IGame mockGame = GameFactory.createGame(gameName);
-        if (mockGame == null) {
-            presenter.sendMessage(id, "Игра " + gameName + " не найдена");
+        if (!GameFactory.doesGameExist(gameName)) {
+            String text = messageService.get("joinLobby.gameDoesNotExist", null, gameName);
+            presenter.sendMessage(id, text);
             return;
         }
         lobbyRepo.addUserToLobby(id, gameName);
-        presenter.sendMessage(id, "Ищем игру в " + gameName);
+        String text = messageService.get("joinLobby.searchingGame", null, gameName);
+        presenter.sendMessage(id, text);
     }
 }

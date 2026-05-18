@@ -1,6 +1,7 @@
 package GamieBot.usecase;
 
 import GamieBot.adapter.presenter.IPresenter;
+import GamieBot.adapter.resources.TestMessageService;
 import org.junit.jupiter.api.Test;
 
 import java.util.UUID;
@@ -21,7 +22,7 @@ public class HelpUCTest {
     @Test
     public void sendsHelp() {
         TestPresenter presenter = new TestPresenter();
-        HelpUC uc = new HelpUC(presenter);
+        HelpUC uc = new HelpUC(presenter, new TestMessageService());
         UUID id = UUID.randomUUID();
         uc.execute(id);
 

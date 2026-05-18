@@ -1,6 +1,7 @@
 package GamieBot.usecase;
 
 import GamieBot.adapter.presenter.IPresenter;
+import GamieBot.adapter.resources.TestMessageService;
 import GamieBot.domain.games.TicTacToe;
 import GamieBot.domain.gameSession.GameSession;
 import GamieBot.infra.repo.session.IGameSessionRepo;
@@ -37,7 +38,7 @@ public class MakeMoveUCTest {
         CapturingPresenter presenter = new CapturingPresenter();
         FakeSessionRepo repo = new FakeSessionRepo(session);
 
-        MakeMoveUC uc = new MakeMoveUC(repo, presenter);
+        MakeMoveUC uc = new MakeMoveUC(repo, presenter, new TestMessageService());
         uc.execute(p1, "1 1");
 
         // Expect that the player who moved got a confirmation and both players got state updates

@@ -21,32 +21,34 @@ public class CommandRouterTest {
 
     static class TestUCFactory extends UCFactory {
         private final IPresenter presenter;
+        private final GamieBot.adapter.resources.TestMessageService messageService;
 
         public TestUCFactory(IPresenter presenter) {
-            super(null, null, null, presenter);
+            super(null, null, null, presenter, new GamieBot.adapter.resources.TestMessageService());
             this.presenter = presenter;
+            this.messageService = new GamieBot.adapter.resources.TestMessageService();
         }
 
         @Override
-        public HelloUC createHelloUC() { return new HelloUC(presenter); }
+        public HelloUC createHelloUC() { return new HelloUC(presenter, messageService); }
 
         @Override
-        public HelpUC createHelpUC() { return new HelpUC(presenter); }
+        public HelpUC createHelpUC() { return new HelpUC(presenter, messageService); }
 
         @Override
-        public JoinLobbyUC createJoinLobbyUC() { return new JoinLobbyUC(null, null, presenter); }
+        public JoinLobbyUC createJoinLobbyUC() { return new JoinLobbyUC(null, null, presenter, messageService); }
 
         @Override
-        public TryMatchMakingUC createTryMatchMakingUC() { return new TryMatchMakingUC(null, null, presenter); }
+        public TryMatchMakingUC createTryMatchMakingUC() { return new TryMatchMakingUC(null, null, presenter, messageService); }
 
         @Override
-        public MakeMoveUC createMakeMoveUC() { return new MakeMoveUC(null, presenter); }
+        public MakeMoveUC createMakeMoveUC() { return new MakeMoveUC(null, presenter, messageService); }
 
         @Override
-        public QuitLobbyUC createQuitLobbyUC() { return new QuitLobbyUC(null, null); }
+        public QuitLobbyUC createQuitLobbyUC() { return new QuitLobbyUC(null, null, presenter, messageService); }
 
         @Override
-        public QuitGameSessionUC createQuitGameSessionUC() { return new QuitGameSessionUC(null, null, presenter); }
+        public QuitGameSessionUC createQuitGameSessionUC() { return new QuitGameSessionUC(null, null, presenter, messageService); }
 
         @Override
         public UnknownInputUC createUnknownInputUC() { return new UnknownInputUC(presenter); }

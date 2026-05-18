@@ -1,11 +1,12 @@
 package GamieBot.domain.gameSession;
 
+import GamieBot.exception.gameSession.*;
+import GamieBot.domain.games.IGame;
 import java.util.List;
 import java.util.UUID;
 
-import GamieBot.domain.games.IGame;
-
 public class GameSession {
+
     private final IGame game;
     private final List<UUID> players;
 
@@ -24,49 +25,52 @@ public class GameSession {
         return -1;
     }
 
-    public String makeMove(UUID id, String action) {
+    public void makeMove(UUID id, String action) throws
+        PlayerNotFoundException,
+        GameIsAlreadyFinishedException,
+        AnotherPlayersTurnException,
+        InvalidMoveException 
+    {
         int playerNum = getPlayerNum(id);
 
         if (playerNum == -1) {
-            return "Такого игрока в сессии нет";
+            throw new PlayerNotFoundException();
         }
 
         if (game.isFinished()) {
-            return "Игра закончена";
+            throw new GameIsAlreadyFinishedException();
         }
 
         if (playerNum != game.getMovingPlayer()) {
-            return "Ход другого игрока";
+            throw new AnotherPlayersTurnException();
         }
 
         if (!game.checkMove(playerNum, action)) {
-            return "Недопустимый ход";
+            throw new InvalidMoveException();
         }
-        
+
         game.makeMove(playerNum, action);
-        return "Ход выполнен";
-        
     }
 
-    public String getGameStateForPlayer(UUID id) {
+    public String getGameStateForPlayer(UUID id)
+        throws PlayerNotFoundException {
         int playerNum = getPlayerNum(id);
 
         if (playerNum == -1) {
-            return "Такого игрока в сессии нет";
+            throw new PlayerNotFoundException();
         }
 
         return game.getInfoForPlayer(playerNum);
     }
 
-    public String capitulate(UUID id) {
+    public void capitulate(UUID id) throws PlayerNotFoundException {
         int playerNum = getPlayerNum(id);
 
         if (playerNum == -1) {
-            return "Такого игрока нет в сессии";
+            throw new PlayerNotFoundException();
         }
 
         game.capitulate(playerNum);
-        return "Вы успешно проиграли";
     }
 
     public boolean isFinished() {
@@ -75,5 +79,9 @@ public class GameSession {
 
     public List<UUID> getPlayers() {
         return players;
+    }
+
+    public UUID getMovingPlayer() {
+        return players.get(game.getMovingPlayer());
     }
 }

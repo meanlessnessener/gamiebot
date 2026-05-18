@@ -32,7 +32,8 @@ public class QuitLobbyUCTest {
         FakeUserRepo userRepo = new FakeUserRepo(id);
         FakeLobbyRepo lobbyRepo = new FakeLobbyRepo();
 
-        QuitLobbyUC uc = new QuitLobbyUC(userRepo, lobbyRepo);
+        GamieBot.adapter.presenter.IPresenter presenter = (chatId, msg) -> {};
+        QuitLobbyUC uc = new QuitLobbyUC(userRepo, lobbyRepo, presenter, new GamieBot.adapter.resources.TestMessageService());
         uc.execute(id);
 
         assertEquals(id, lobbyRepo.removed);
