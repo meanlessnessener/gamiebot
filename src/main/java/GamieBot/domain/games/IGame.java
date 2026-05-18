@@ -14,6 +14,8 @@ public interface IGame {
     public String getInfoForPlayer(int playerNum);
 
     public int getMovingPlayer();
+    
+    public int getWinner();
 
     public boolean isFinished();
 
