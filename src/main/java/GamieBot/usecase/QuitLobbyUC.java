@@ -5,6 +5,7 @@ import GamieBot.infra.repo.user.IUserRepo;
 import GamieBot.adapter.presenter.IPresenter;
 import GamieBot.adapter.resources.IMessageService;
 import GamieBot.domain.user.User;
+import GamieBot.domain.user.UserStatus;
 import java.util.UUID;
 
 public class QuitLobbyUC {
@@ -25,6 +26,14 @@ public class QuitLobbyUC {
         if (user == null) {
             return;
         }
+        if (user.getStatus() != UserStatus.SEARCHING) {
+            String text = messageService.get("quitLobby.notInLobby", null);
+            presenter.sendMessage(userId, text);
+            return;
+        }
+        user.setStatus(UserStatus.IDLE);
+        userRepo.saveUser(userId, user);
+        
         String text = messageService.get("quitLobby.youLeftTheLobby", null);
         presenter.sendMessage(userId, text);
         lobbyRepo.removeUserFromLobby(userId);

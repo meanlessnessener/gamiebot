@@ -38,7 +38,7 @@ public class MakeMoveUCTest {
         CapturingPresenter presenter = new CapturingPresenter();
         FakeSessionRepo repo = new FakeSessionRepo(session);
 
-        MakeMoveUC uc = new MakeMoveUC(repo, presenter, new TestMessageService());
+        MakeMoveUC uc = new MakeMoveUC(null, repo, presenter, new TestMessageService());
         uc.execute(p1, "1 1");
 
         // Expect that the player who moved got a confirmation and both players got state updates

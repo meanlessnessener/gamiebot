@@ -5,6 +5,7 @@ import GamieBot.infra.repo.user.IUserRepo;
 import GamieBot.domain.games.GameFactory;
 import GamieBot.domain.games.IGame;
 import GamieBot.domain.user.User;
+import GamieBot.domain.user.UserStatus;
 import GamieBot.adapter.presenter.IPresenter;
 import GamieBot.adapter.resources.IMessageService;
 import java.util.UUID;
@@ -27,6 +28,11 @@ public class JoinLobbyUC {
         if (user == null) {
             return;
         }
+        if (user.getStatus() != UserStatus.IDLE) {
+            String text = messageService.get("joinLobby.alreadyInGame", null);
+            presenter.sendMessage(id, text);
+            return;
+        }
         if (gameName == null || gameName.isEmpty()) {
             String text = messageService.get("joinLobby.gameNameRequired", null);
             presenter.sendMessage(id, text);
@@ -38,6 +44,8 @@ public class JoinLobbyUC {
             return;
         }
         lobbyRepo.addUserToLobby(id, gameName);
+        user.setStatus(UserStatus.SEARCHING);
+        userRepo.saveUser(id, user);
         String text = messageService.get("joinLobby.searchingGame", null, gameName);
         presenter.sendMessage(id, text);
     }

@@ -45,6 +45,10 @@ public class GameSession {
             throw new AnotherPlayersTurnException();
         }
 
+        if (!game.checkMoveForm(playerNum, action)) {
+            throw new InvalidMoveException();
+        }
+
         if (!game.checkMove(playerNum, action)) {
             throw new InvalidMoveException();
         }
@@ -83,5 +87,12 @@ public class GameSession {
 
     public UUID getMovingPlayer() {
         return players.get(game.getMovingPlayer());
+    }
+
+    public UUID getWinner() {
+        if (!isFinished()) {
+            return null;
+        }
+        return players.get(game.getWinner());
     }
 }

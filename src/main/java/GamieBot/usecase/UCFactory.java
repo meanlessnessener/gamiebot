@@ -38,11 +38,11 @@ public class UCFactory {
     }
 
     public TryMatchMakingUC createTryMatchMakingUC() {
-        return new TryMatchMakingUC(lobbyRepo, gameSessionRepo, presenter, messageService);
+        return new TryMatchMakingUC(userRepo, lobbyRepo, gameSessionRepo, presenter, messageService);
     }
 
     public MakeMoveUC createMakeMoveUC() {
-        return new MakeMoveUC(gameSessionRepo, presenter, messageService);
+        return new MakeMoveUC(userRepo, gameSessionRepo, presenter, messageService);
     }
 
     public QuitLobbyUC createQuitLobbyUC() {

@@ -5,24 +5,30 @@ import GamieBot.adapter.resources.IMessageService;
 import GamieBot.domain.gameSession.GameSession;
 import GamieBot.domain.games.GameFactory;
 import GamieBot.domain.games.IGame;
+import GamieBot.domain.user.User;
+import GamieBot.domain.user.UserStatus;
 import GamieBot.infra.repo.lobby.ILobbyRepo;
 import GamieBot.infra.repo.session.IGameSessionRepo;
+import GamieBot.infra.repo.user.IUserRepo;
 import java.util.List;
 import java.util.UUID;
 
 public class TryMatchMakingUC {
 
+    private final IUserRepo userRepo;
     private final ILobbyRepo lobbyRepo;
     private final IGameSessionRepo gameSessionRepo;
     private final IPresenter presenter;
     private final IMessageService messageService;
 
     public TryMatchMakingUC(
+        IUserRepo userRepo,
         ILobbyRepo lobbyRepo,
         IGameSessionRepo gameSessionRepo,
         IPresenter presenter,
         IMessageService messageService
     ) {
+        this.userRepo = userRepo;
         this.lobbyRepo = lobbyRepo;
         this.gameSessionRepo = gameSessionRepo;
         this.presenter = presenter;
@@ -48,6 +54,10 @@ public class TryMatchMakingUC {
         String othersMove = messageService.get("matchMaking.othersMove", null);
         
         for (UUID userId : usersInLobby) {
+            User user = userRepo.getUserByUUID(userId);
+            user.setStatus(UserStatus.INGAME);
+            userRepo.saveUser(userId, user);
+            
             presenter.sendMessage(userId, gameStarted);
             presenter.sendMessage(userId, session.getGameStateForPlayer(userId));
             if (userId == session.getMovingPlayer()) {
