@@ -9,6 +9,7 @@ public class TicTacToe implements IGame {
         state = "=======\n| | | |\n=======\n| | | |\n=======\n| | | |\n=======".toCharArray();
         player1 = 0;
         player2 = 1;
+        winnerPlayer = -1;
         movingPlayer = player1;
         isEnd = false;
     }
@@ -30,19 +31,19 @@ public class TicTacToe implements IGame {
         return state[(x * 2 + 1) * 8 + y * 2 + 1];
     }
 
-    private void setWinner(String res) {
-        state = ("The Game is end. The winner: " + res).toCharArray();
+    private void setWinner(int res) {
+        winnerPlayer = res;
     }
 
     private boolean checkGlavDiag() {
         if (crd(0, 0) == crd(1, 1) && crd(1, 1) == crd(2, 2)) {
             if (crd(0, 0) == 'X') {
-                setWinner("First");
+                setWinner(0);
                 isEnd = true;
                 return true;
             }
             if (crd(0, 0) == 'O') {
-                setWinner("Second");
+                setWinner(1);
                 isEnd = true;
                 return true;
             }
@@ -53,12 +54,12 @@ public class TicTacToe implements IGame {
     private boolean checkPobDiag() {
         if (crd(0, 2) == crd(1, 1) && crd(1, 1) == crd(2, 0)) {
             if (crd(1, 1) == 'X') {
-                setWinner("First");
+                setWinner(0);
                 isEnd = true;
                 return true;
             }
             if (crd(1, 1) == 'O') {
-                setWinner("Second");
+                setWinner(1);
                 isEnd = true;
                 return true;
             }
@@ -69,12 +70,12 @@ public class TicTacToe implements IGame {
     private boolean checkGor(int x) {
         if (crd(x, 0) == crd(x, 1) && crd(x, 1) == crd(x, 2)) {
             if (crd(x, 0) == 'X') {
-                setWinner("First");
+                setWinner(0);
                 isEnd = true;
                 return true;
             }
             if (crd(x, 0) == 'O') {
-                setWinner("Second");
+                setWinner(1);
                 isEnd = true;
                 return true;
             }
@@ -85,12 +86,12 @@ public class TicTacToe implements IGame {
     private boolean checkHor(int y) {
         if (crd(0, y) == crd(1, y) && crd(1, y) == crd(2, y)) {
             if (crd(0, y) == 'X') {
-                setWinner("First");
+                setWinner(0);
                 isEnd = true;
                 return true;
             }
             if (crd(0, y) == 'O') {
-                setWinner("Second");
+                setWinner(1);
                 isEnd = true;
                 return true;
             }
@@ -185,16 +186,21 @@ public class TicTacToe implements IGame {
     public void capitulate(int playerNum) {
         if (!isEnd) {
             if (playerNum == player1) {
-                setWinner("First");
+                setWinner(0);
             } else {
-                setWinner("Second");
+                setWinner(1);
             }
         }
         isEnd = true;
     }
 
+    @Override
+    public int getWinner() {
+        return winnerPlayer;
+    }
+
     private char[] state;
-    private int player1, player2;
+    private int player1, player2, winnerPlayer;
     private int movingPlayer;
     private boolean isEnd;
 }

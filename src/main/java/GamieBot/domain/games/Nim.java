@@ -10,8 +10,8 @@ public class Nim implements IGame {
         return (4 - y) * 10 + x;
     }
 
-    private void setWinner(String res) {
-        visualState = ("The Game is end. The winner: " + res).toCharArray();
+    private void setWinner(int res) {
+        winnerPlayer = res;
     }
 
     @Override
@@ -27,6 +27,7 @@ public class Nim implements IGame {
         }
         player1 = 0;
         player2 = 1;
+        winnerPlayer = -1;
         movingPlayer = player1;
         isEnd = false;
     }   
@@ -91,9 +92,9 @@ public class Nim implements IGame {
             if (state[i] != 0) return;
         }
         if (movingPlayer == player1) {
-            setWinner("Second");
+            setWinner(1);
         } else {
-            setWinner("First");
+            setWinner(0);
         }
         isEnd = true;
     }
@@ -137,17 +138,22 @@ public class Nim implements IGame {
     public void capitulate(int playerNum) {
         if (!isEnd) {
             if (playerNum == player1) {
-                setWinner("First");
+                setWinner(0);
             } else {
-                setWinner("Second");
+                setWinner(1);
             }
         }
         isEnd = true;
     }
+
+    @Override
+    public int getWinner() {
+        return winnerPlayer;
+    }
     
     private int[] state;
     private char[] visualState;
-    private int player1, player2;
+    private int player1, player2, winnerPlayer;
     private int movingPlayer;
     private boolean isEnd;
 }
