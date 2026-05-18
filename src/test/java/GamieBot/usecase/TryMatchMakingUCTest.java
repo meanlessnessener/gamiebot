@@ -2,8 +2,11 @@ package GamieBot.usecase;
 
 import GamieBot.adapter.presenter.IPresenter;
 import GamieBot.adapter.resources.TestMessageService;
+import GamieBot.domain.user.User;
+import GamieBot.domain.user.UserStatus;
 import GamieBot.infra.repo.lobby.ILobbyRepo;
 import GamieBot.infra.repo.session.IGameSessionRepo;
+import GamieBot.infra.repo.user.IUserRepo;
 import org.junit.jupiter.api.Test;
 
 import java.util.*;
@@ -17,6 +20,14 @@ public class TryMatchMakingUCTest {
         public void sendMessage(UUID chatId, String msg) {
             msgs.computeIfAbsent(chatId, k -> new ArrayList<>()).add(msg);
         }
+    }
+
+    static class FakeUserRepo implements IUserRepo {
+        private final Map<UUID, User> users = new HashMap<>();
+        @Override public User getUserByUUID(UUID id) { return users.getOrDefault(id, new User(id, "test")); }
+        @Override public void saveUser(UUID id, User user) { users.put(id, user); }
+        @Override public UUID getUserByProvider(String provider, String token) { return null; }
+        @Override public void saveUserByProvider(String provider, String token, UUID userId) {}
     }
 
     static class FakeLobbyRepo implements ILobbyRepo {
@@ -40,10 +51,17 @@ public class TryMatchMakingUCTest {
         List<UUID> users = Arrays.asList(u1, u2);
 
         CapturingPresenter presenter = new CapturingPresenter();
+        FakeUserRepo userRepo = new FakeUserRepo();
+        User user1 = new User(u1, "user1");
+        user1.setStatus(UserStatus.SEARCHING);
+        userRepo.saveUser(u1, user1);
+        User user2 = new User(u2, "user2");
+        user2.setStatus(UserStatus.SEARCHING);
+        userRepo.saveUser(u2, user2);
         FakeLobbyRepo lobbyRepo = new FakeLobbyRepo(users);
         FakeGameSessionRepo sessionRepo = new FakeGameSessionRepo();
 
-        TryMatchMakingUC uc = new TryMatchMakingUC(null, lobbyRepo, sessionRepo, presenter, new TestMessageService());
+        TryMatchMakingUC uc = new TryMatchMakingUC(userRepo, lobbyRepo, sessionRepo, presenter, new TestMessageService());
         uc.execute("TicTacToe");
 
         assertNotNull(sessionRepo.saved, "Session should be saved");

@@ -3,7 +3,6 @@ package GamieBot.usecase;
 import GamieBot.infra.repo.lobby.ILobbyRepo;
 import GamieBot.infra.repo.user.IUserRepo;
 import GamieBot.domain.games.GameFactory;
-import GamieBot.domain.games.IGame;
 import GamieBot.domain.user.User;
 import GamieBot.domain.user.UserStatus;
 import GamieBot.adapter.presenter.IPresenter;
