@@ -86,13 +86,19 @@ public class MakeMoveUC {
                 String text = messageService.get("makeMove.gameIsFinished", null);
                 presenter.sendMessage(playerId, text);
 
-                if (userId.equals(session.getWinner())) {
-                    String text1 = messageService.get("makeMove.youAreWinner", null);
-                    presenter.sendMessage(playerId, text1);
+                if (session.isDraw()) {
+                    String text1 = messageService.get("makeMove.draw", null);
+                    presenter.sendMessage(playerId, text);
                 } else {
-                    String text1 = messageService.get("makeMove.youAreLoser", null);
-                    presenter.sendMessage(playerId, text1);
+                    if (playerId.equals(session.getWinner())) {
+                        String text1 = messageService.get("makeMove.youAreWinner", null);
+                        presenter.sendMessage(playerId, text1);
+                    } else {
+                        String text1 = messageService.get("makeMove.youAreLoser", null);
+                        presenter.sendMessage(playerId, text1);
+                    }
                 }
+
 
                 User player = userRepo.getUserByUUID(playerId);
                 player.setStatus(UserStatus.IDLE);
@@ -102,10 +108,10 @@ public class MakeMoveUC {
             }
             
             if (playerId.equals(userId)) {
-                String text1 = messageService.get("makeMove.yourMove", null);
+                String text1 = messageService.get("makeMove.othersMove", null);
                 presenter.sendMessage(playerId, text1);
             } else {
-                String text1 = messageService.get("makeMove.othersMove", null);
+                String text1 = messageService.get("makeMove.yourMove", null);
                 presenter.sendMessage(playerId, text1);
             }
         }

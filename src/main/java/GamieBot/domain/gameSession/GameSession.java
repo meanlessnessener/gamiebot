@@ -95,4 +95,8 @@ public class GameSession {
         }
         return players.get(game.getWinner());
     }
+
+    public boolean isDraw() {
+        return game.isDraw();
+    }
 }
